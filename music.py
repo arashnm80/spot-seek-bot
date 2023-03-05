@@ -1,5 +1,4 @@
 import telebot
-from telebot import apihelper  # for using default_message_handler
 import os
 import re
 from functions import download, file_list

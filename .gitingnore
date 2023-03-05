@@ -1,2 +1,2 @@
-music/
-build/
+output/
+__pycache__/

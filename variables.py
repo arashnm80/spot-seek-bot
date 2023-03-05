@@ -17,3 +17,7 @@ database_channel = os.environ["NM80_MUSIC_DATABASE_ID"]
 
 # spotify song link regex pattern
 link_pattern = r'https:\/\/open\.spotify\.com\/track\/[a-zA-Z0-9]+'
+
+# log chanel
+log_bot_url = "https://api.telegram.org/bot" + os.environ['NM80_LOG_BOT_API'] + "/"
+log_channel_id = os.environ['LOG_CHANNEL_ID']

@@ -3,12 +3,15 @@ import os
 import re
 from functions import download, file_list
 from variables import welcome_message, directory, bot_api, database_channel, link_pattern
+from log import log, log_channel_id
 
 bot = telebot.TeleBot(bot_api)
 
 @bot.message_handler(commands = ['start'])
 def start_message(message):
     bot.send_message(message.chat.id, welcome_message)
+    log("nm80_music_bot started")
+    print(log_channel_id)
 
 @bot.message_handler(regexp = link_pattern)
 def get_by_index(message):

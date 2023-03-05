@@ -1,2 +1,6 @@
+# ignored folders
 output/
 __pycache__/
+
+# ignored files
+spotdl

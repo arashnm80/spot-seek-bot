@@ -2,8 +2,10 @@ import telebot
 import os
 import re
 from functions import download, file_list
-from variables import welcome_message, directory, bot_api, database_channel, link_pattern
+from variables import welcome_message, directory, bot_api, database_channel, spotify_song_link_pattern
 from log import log, log_channel_id
+from database import csv_read, csv_append, csv_search, csv_sort
+from spotify import valid_song_link, get_all_song_links, get_song_id
 
 bot = telebot.TeleBot(bot_api)
 
@@ -11,28 +13,30 @@ bot = telebot.TeleBot(bot_api)
 def start_message(message):
     bot.send_message(message.chat.id, welcome_message)
     log("nm80_music_bot started")
-    print(log_channel_id)
 
-@bot.message_handler(regexp = link_pattern)
+@bot.message_handler(commands = ['test'])
+def start_message(message):
+    log("nm80_music_bot test command sent")
+#    bot.send_audio(message.chat.id, "CQACAgQAAx0Eb86Z0AADDWQE4hXtYcotomw3GYXJJjV27ZqAAAIwDwACT3AoUI_7sKDsPte7LgQ")
+
+@bot.message_handler(regexp = spotify_song_link_pattern)
 def get_by_index(message):
-    bot.send_message(message.chat.id, "right pattern link pattern")
-    matches = re.findall(link_pattern, message.text)
+    bot.send_message(message.chat.id, "right spotify_song_link_pattern")
+    matches = get_all_song_links(message.text)
     if matches:
-        # Store all matches in a list:
-        spotify_links = matches
-        print("Spotify links found:", spotify_links)
         # download every link:
         for link in matches:
             download(link)
         # upload to telegram and delete from hard drive:
-        for file in file_list(directory):    
+        for file in file_list(directory):
+            # first send to database_channel:
             audio = open(directory + file, 'rb')
-            bot.send_audio(message.chat.id, audio)
-            audio = open(directory + file, 'rb')
-            bot.send_audio(database_channel, audio)
+            audio_message = bot.send_audio(database_channel, audio)
+            # second send to user:
+            bot.send_audio(message.chat.id, audio_message.audio.file_id)
 #            os.remove(directory + file)
     else:
-        print("No matches found. this line should not happen in normal behavior")
+        log("No matches found. this line should not happen in normal behavior")
 
 @bot.message_handler(func=lambda message: True)
 def echo_all(message):

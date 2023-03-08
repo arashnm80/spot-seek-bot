@@ -16,9 +16,18 @@ bot_api = os.environ["NM80_MUSIC_BOT_API"]
 database_channel = os.environ["NM80_MUSIC_DATABASE_ID"]
 
 # spotify regex patterns
-spotify_song_link_pattern = r'https:\/\/open\.spotify\.com\/track\/[a-zA-Z0-9]+'
-spotify_song_id_pattern = r"spotify\.com\/track\/(\w+)(?:\?.*)?$"
+spotify_track_link_pattern = r'https:\/\/open\.spotify\.com\/track\/[a-zA-Z0-9]+'
+spotify_album_link_pattern = r'https:\/\/open\.spotify\.com\/album\/[a-zA-Z0-9]+'
+spotify_playlist_link_pattern = r'https:\/\/open\.spotify\.com\/playlist\/[a-zA-Z0-9]+'
+spotify_correct_link_pattern = spotify_track_link_pattern + "|" + spotify_album_link_pattern + "|" + spotify_playlist_link_pattern
+#spotify_track_id_pattern = r"spotify\.com\/track\/(\w+)(?:\?.*)?$"
+#spotify_album_id_pattern = r"spotify\.com\/album\/(\w+)(?:\?.*)?$"
+#spotify_playlist_id_pattern = r"spotify\.com\/playlist\/(\w+)(?:\?.*)?$"
 
 # log chanel
 log_bot_url = "https://api.telegram.org/bot" + os.environ['NM80_LOG_BOT_API'] + "/"
 log_channel_id = os.environ['LOG_CHANNEL_ID']
+
+# spotify
+spotify_client_id = os.environ["SPOTIFY_TEST_APP_CLIENT_ID"]
+spotify_client_secret = os.environ["SPOTIFY_TEST_APP_CLIENT_SECRET"]

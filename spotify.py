@@ -1,28 +1,53 @@
 import re
-from variables import spotify_song_link_pattern, spotify_song_id_pattern
+from variables import spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_client_id, spotify_client_secret
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
 
-def valid_spotify_song_link(text):
-    return bool(re.match(spotify_song_link_pattern, text))
-
-def get_all_spotify_song_links(text):
-    matches = re.findall(spotify_song_link_pattern, text)
-    return matches
-
-def get_spotify_song_id(song_link):
-    # use regex to extract the song ID from the link
-    match = re.search(spotify_song_id_pattern, song_link)
-    if match:
-        # the song ID is captured in the first group of the regex match
-        spotify_song_id = match.group(1)
-        return spotify_song_id
+def get_link_type(text):
+    if re.match(spotify_track_link_pattern, text):
+        return "track"
+    elif re.match(spotify_album_link_pattern, text):
+        return "album"
+    elif re.match(spotify_playlist_link_pattern, text):
+        return "playlist"
     else:
         return False
 
-#######################################################################################
-"""
-x = input("enter: ")
-print(get_all_song_links(x))
-y = [2]
-if y:
-    print("ok")
-"""
+#def get_all_spotify_track_links(text):
+#    matches = re.findall(spotify_track_link_pattern, text)
+#    return matches
+
+## TO-DO: remove later becuase functionality is embedded to retern_tracks()
+#def get_spotify_track_id(track_link):
+#    # use regex to extract the track ID from the link
+#    match = re.search(spotify_track_id_pattern, track_link)
+#    if match:
+#        # the song ID is captured in the first group of the regex match
+#        spotify_track_id = match.group(1)
+#        return spotify_track_id
+#    else:
+#        return False
+
+def get_track_ids(link):
+    #Authentication - without user
+    client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)
+    sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
+    
+    # get uri of link, album or playlist
+    URI = link.split("/")[-1].split("?")[0]
+
+    link_type = get_link_type(link)
+    if link_type == "track":
+        tracks = sp.track(URI)
+        track_ids = [tracks["id"]]
+    elif link_type == "album":
+        tracks = sp.album_tracks(URI)["items"]
+        track_ids = [t["id"] for t in tracks]
+    elif link_type == "playlist":
+        tracks = sp.playlist_tracks(URI)["items"]
+        track_ids = [t["track"]["id"] for t in tracks]
+    else:
+        return []
+
+    return(track_ids)
+

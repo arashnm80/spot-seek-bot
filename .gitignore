@@ -4,3 +4,4 @@ __pycache__/
 
 # ignored files
 spotdl
+.cache

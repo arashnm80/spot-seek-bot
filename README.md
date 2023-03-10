@@ -2,4 +2,4 @@
 telegram spotify downloader bot
 
 ### database csv columns:
-`date and time added` | `spotify track id` | `telegram audio id` | `repetition`
+`date and time added` | `spotify track id` | `telegram audio id` | `repetition` | `track name`

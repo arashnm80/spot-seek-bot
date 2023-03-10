@@ -33,21 +33,32 @@ def get_track_ids(link):
     client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)
     sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
     
-    # get uri of link, album or playlist
-    URI = link.split("/")[-1].split("?")[0]
+    # get id of link, album or playlist
+    track_id = link.split("/")[-1].split("?")[0]
 
     link_type = get_link_type(link)
     if link_type == "track":
-        tracks = sp.track(URI)
+        tracks = sp.track(track_id)
         track_ids = [tracks["id"]]
     elif link_type == "album":
-        tracks = sp.album_tracks(URI)["items"]
+        tracks = sp.album_tracks(track_id)["items"]
         track_ids = [t["id"] for t in tracks]
     elif link_type == "playlist":
-        tracks = sp.playlist_tracks(URI)["items"]
+        tracks = sp.playlist_tracks(track_id)["items"]
         track_ids = [t["track"]["id"] for t in tracks]
     else:
         return []
 
     return(track_ids)
+
+def get_track_image(track_link):
+    #Authentication - without user
+    client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)
+    sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
+    
+    track_id = track_link.split("/")[-1].split("?")[0]
+    track = sp.track(track_id)
+    cover_image_url = track['album']['images'][0]['url']
+    
+    return cover_image_url
 

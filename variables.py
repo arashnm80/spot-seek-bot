@@ -1,12 +1,28 @@
 import os
 
+# bot name
+bot_name = "Spot Seek Bot"
+bot_username = "@SpotSeekBot"
+
 # message for /start command
-welcome_message = '''welcome to nm80 music bot\n
-send me a song link from spotify, for example:
-https://open.spotify.com/track/734dz1YaFITwawPpM25fSt\n
-this is the beta test version and currently it's 1 feature with a million bugs and changes to go, \
-so test it and give me feedbacks and help me to improve it.
-me: @Arashnm80'''
+welcome_message = '''Welcome to @SpotSeekBot
+
+Send me a link from spotify and I'll download it for you.
+It can be a track link like this:
+https://open.spotify.com/track/734dz1YaFITwawPpM25fSt
+Or an album like this:
+https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
+Or a playlist like this:
+https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
+
+This is currently the beta version of the bot and it's under test. I you found a bug or had any feedbacks I'll be glad to hear from you. \
+You can contact me at: @Arashnm80
+
+This bot whole open source is available in github and all interested programmers are welcome to contribute and improve it:
+https://github.com/arashnm80/spot-seek-bot
+
+You can find out more about me and my works through my channel:
+@Arashnm80_Channel'''
 
 # download directory
 directory = "./output/"
@@ -29,7 +45,7 @@ spotify_correct_link_pattern = spotify_track_link_pattern + "|" + spotify_album_
 #spotify_playlist_id_pattern = r"spotify\.com\/playlist\/(\w+)(?:\?.*)?$"
 
 # log chanel
-log_bot_url = "https://api.telegram.org/bot" + os.environ['NM80_LOG_BOT_API'] + "/"
+log_bot_url = "https://api.telegram.org/bot" + bot_api + "/"
 log_channel_id = os.environ['LOG_CHANNEL_ID']
 
 # spotify
@@ -44,3 +60,9 @@ db_tl_audio_column = 2
 # users csv columns
 ucsv_user_id_column = 0
 ucsv_last_time_column = 1
+
+# data and time format in csv files
+datetime_format = "%Y/%m/%d-%H:%M:%S"
+
+# necessary time in seconds for user to wait between 2 requests
+user_request_wait = 30

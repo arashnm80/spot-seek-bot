@@ -13,21 +13,6 @@ def get_link_type(text):
     else:
         return False
 
-#def get_all_spotify_track_links(text):
-#    matches = re.findall(spotify_track_link_pattern, text)
-#    return matches
-
-## TO-DO: remove later becuase functionality is embedded to retern_tracks()
-#def get_spotify_track_id(track_link):
-#    # use regex to extract the track ID from the link
-#    match = re.search(spotify_track_id_pattern, track_link)
-#    if match:
-#        # the song ID is captured in the first group of the regex match
-#        spotify_track_id = match.group(1)
-#        return spotify_track_id
-#    else:
-#        return False
-
 def get_track_ids(link):
     #Authentication - without user
     client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)

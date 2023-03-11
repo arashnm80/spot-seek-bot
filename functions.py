@@ -3,17 +3,17 @@ import os
 from variables import directory
 from spotify import get_track_image
 
-def download(link):
+def download(track_link):
     # download track
-    print("start downloading: " + link)
-    command = ['../spotdl', "--bitrate", "320k", link]
+    print("start downloading: " + track_link)
+    command = ['../spotdl', "--bitrate", "320k", track_link]
     subprocess.run(command, cwd=directory)
-    print("end downloading: " + link)
+    print("end downloading: " + track_link)
 
     # download cover image
-    image_url = get_track_image(link)
+    image_url = get_track_image(track_link)
     print("start downloading cover image: " + image_url)
-    subprocess.run(f"wget -O cover.jpg {link}", shell=True, cwd=directory)
+    subprocess.run(f"wget -O cover.jpg {image_url}", shell=True, cwd=directory)
     print("end downloading cover image: " + image_url)
 
 def file_list(directory):

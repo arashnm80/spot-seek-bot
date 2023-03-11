@@ -11,6 +11,10 @@ me: @Arashnm80'''
 # download directory
 directory = "./output/"
 
+# csv files path
+db_csv_path = "./csv_files/db.csv"
+users_csv_path = "./csv_files/users.csv"
+
 # env variables
 bot_api = os.environ["NM80_MUSIC_BOT_API"]
 database_channel = os.environ["NM80_MUSIC_DATABASE_ID"]
@@ -31,3 +35,12 @@ log_channel_id = os.environ['LOG_CHANNEL_ID']
 # spotify
 spotify_client_id = os.environ["SPOTIFY_TEST_APP_CLIENT_ID"]
 spotify_client_secret = os.environ["SPOTIFY_TEST_APP_CLIENT_SECRET"]
+
+# database csv columns
+db_time_column = 0
+db_sp_track_column = 1
+db_tl_audio_column = 2
+
+# users csv columns
+ucsv_user_id_column = 0
+ucsv_last_time_column = 1

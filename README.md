@@ -1,5 +1,5 @@
 # nm80-music-bot
-telegram spotify downloader bot
+telegram spotify downloader bot: @SpotSeekBot
 
 ### database csv columns:
 `date and time added` | `spotify track id` | `telegram audio id`

@@ -16,8 +16,8 @@ db_csv_path = "./csv_files/db.csv"
 users_csv_path = "./csv_files/users.csv"
 
 # env variables
-bot_api = os.environ["NM80_MUSIC_BOT_API"]
-database_channel = os.environ["NM80_MUSIC_DATABASE_ID"]
+bot_api = os.environ["SPOT_SEEK_BOT_API"]
+database_channel = os.environ["MUSIC_DATABASE_ID"]
 
 # spotify regex patterns
 spotify_track_link_pattern = r'https:\/\/open\.spotify\.com\/track\/[a-zA-Z0-9]+'

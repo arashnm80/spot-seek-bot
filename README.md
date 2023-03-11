@@ -1,4 +1,4 @@
-# nm80-music-bot
+# Spot Seek bot
 telegram spotify downloader bot: @SpotSeekBot
 
 ### database csv columns:

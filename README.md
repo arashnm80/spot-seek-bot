@@ -34,7 +34,7 @@ Here are some similar telegram bots by others:
 ### users csv columns
 `unique user id` | `last use date and time`
 
-## known bugs and problems so for that should be fixed later
+## known bugs and problems so for that could be fixed later
 - some musics duration or size is not shown
 - only 1 single user can use the bot and it can't multitask
 - downloading all songs of an artist is not available

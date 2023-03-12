@@ -1,7 +1,7 @@
 # Spot Seek bot
 telegram spotify downloader bot: [@SpotSeekBot](https://t.me/SpotSeekBot)
 
-# main file that should be run
+### main file that should be run
 spotseek.py
 
 ### used softwares

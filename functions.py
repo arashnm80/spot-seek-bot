@@ -7,13 +7,13 @@ def download(track_link):
     # download track
     print("start downloading: " + track_link)
     command = ['../spotdl', "--bitrate", "320k", track_link]
-    subprocess.run(command, cwd=directory)
+    subprocess.run(command, cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print("end downloading: " + track_link)
 
     # download cover image
     image_url = get_track_image(track_link)
     print("start downloading cover image: " + image_url)
-    subprocess.run(f"wget -O cover.jpg {image_url}", shell=True, cwd=directory)
+    subprocess.run(f"wget -O cover.jpg -o /dev/null \"{image_url}\"", shell=True, cwd=directory)
     print("end downloading cover image: " + image_url)
 
 def file_list(directory):

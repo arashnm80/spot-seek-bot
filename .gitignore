@@ -5,3 +5,5 @@ __pycache__/
 # ignored files
 spotdl
 .cache
+nohup.out
+spotseek.sh

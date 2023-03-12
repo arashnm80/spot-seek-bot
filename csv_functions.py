@@ -49,8 +49,6 @@ def edit_csv(csv_path, row_index, column_index, new_value):
     # read the CSV file into a pandas dataframe
     df = pd.read_csv(csv_path)
     # update the value in the dataframe
-    print("row:", row_index, "column:", column_index)
-    print(df)
     df.iloc[row_index, column_index] = new_value
     # write the updated dataframe back to a new CSV file
     new_csv_path = csv_path.rstrip(".csv") + "_new.csv"
@@ -115,9 +113,3 @@ def allow_user(telegram_user_id):
         print("user " + telegram_user_id + " added to users.csv")
         return True
 
-#########
-#print(get_row_list_csv_search("./csv_files/users.csv", 0, 1834001537))
-#print(get_row_index_csv_search("./csv_files/users.csv", 0, 1834001537))
-#print(allow_user(1834001537))
-#edit_csv("./csv_files/users.csv", 1, 0, "12")
-#edit_csv("test.csv", 1, 1, "a")

@@ -22,7 +22,20 @@ This bot whole open source is available in github and all interested programmers
 https://github.com/arashnm80/spot-seek-bot
 
 You can find out more about me and my works through my channel:
-@Arashnm80_Channel'''
+@Arashnm80_Channel
+
+If you find my works helpful you can give me energy with coffee☕️:
+coffeete.ir/arashnm80 (﷼)
+buymeacoffee.com/Arashnm80 (dollar)'''
+
+# message for /info command
+info_message = '''Here are known bugs and problems so for that should be fixed later:
+
+- some musics duration or size is not shown
+- only 1 single user can use the bot and it can't multitask
+- downloading all songs of an artist is not available
+- searching in database algorithm isn't fast and efficient
+- caption is not always visible'''
 
 # download directory
 directory = "./output/"

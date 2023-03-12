@@ -1,0 +1,12 @@
+[Unit]
+After=network.target
+Description=SpotSeekBot
+
+[Service]
+Type=simple
+WorkingDirectory=/path/to/spot-seek-bot/
+ExecStart=/usr/bin/python3 /path/to/spot-seek-bot/spotseek.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

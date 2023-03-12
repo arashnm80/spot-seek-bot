@@ -15,7 +15,17 @@ https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 - run it with `nohup python3 spotseek.py > /dev/null 2>&1 &`
 
 ## status
-This is currently the beta version of the bot and it's under test. If you found a bug or had any feedbacks I'll be glad to hear from you. Also if you are a programmer you are welcome to improve the project or use it for yourself.
+I've created This bot to download musics by their link from spotify (single track, album or playlist). It is the first beta test version and there are many bugs to fix and features to add. If you used it I'll be happy to hear about bugs or any other feedbacks.
+
+Also if you are a programmer you are welcome to contribute and improve the project or use it for yourself.
+
+This bot is not a new idea and many others have done this before, So I'm not sure how much it is worth to spend time on. It depends on many factors like my time, server costs and your feedbacks, so for now let's look at it just as a fun weekend project.😉✌️
+
+Here are some similar telegram bots by others:
+- [Spotdlrobot](https://t.me/Spotdlrobot) (by Iranian programmer, [aliilapro](https://github.com/ALIILAPRO))
+- [DeezerMusicBot](https://t.me/DeezerMusicBot)
+- [RegaSpotify_Bot](https://t.me/RegaSpotify_Bot)
+- [MusicsHunterbot](https://t.me/MusicsHunterbot)
 
 ## csv files columns guide
 ### database csv columns

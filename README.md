@@ -10,6 +10,7 @@ https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
 https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 
 ## how to deploy as the developer
+- clone the repo
 - download spotdl executable file, rename it to `spotdl` put it beside `spotseek.py` file
 - install necessary python modules `(os, pandas, telebot, re, threading, csv, spotipy, subprocess, requests, datetime)` and `ffmpeg` software
 - run it with `nohup python3 spotseek.py > /dev/null 2>&1 &` or `nohup python3 spotseek.py &`

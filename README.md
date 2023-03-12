@@ -13,6 +13,7 @@ https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 - download spotdl executable file, rename it to `spotdl` put it beside `spotseek.py` file
 - install necessary python modules `(os, pandas, telebot, re, threading, csv, spotipy, subprocess, requests, datetime)` and `ffmpeg` software
 - run it with `nohup python3 spotseek.py > /dev/null 2>&1 &`
+- I didn't cleared my data in `db.csv`, If you are starting the whole infrastructure by yourself remove everything from it except first row which are the headers
 
 ## status
 I've created This bot to download musics by their link from spotify (single track, album or playlist). It is the first beta test version and there are many bugs to fix and features to add. If you used it I'll be happy to hear about bugs or any other feedbacks.

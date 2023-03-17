@@ -48,6 +48,9 @@ Here are some similar telegram bots by others:
 - searching in database algorithm isn't fast and efficient
 - caption is not always visible
 
+## TO-DO
+- [ ] (add check for matches with 0 size)
+
 ## support and donate
 If you find my works useful you can give me energy with coffee☕️:
 - https://www.coffeete.ir/arashnm80 (﷼)

@@ -12,6 +12,7 @@ https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 ## how to deploy as the developer
 - install python and pip `apt install python3-pip`
 - clone the repo
+- set required environment variables, tokens and api keys. you can see them in `variables.py` file.
 - download spotdl executable file, rename it to `spotdl` put it beside `spotseek.py` file
 - install necessary python modules `(os, pandas, telebot, re, threading, csv, spotipy, subprocess, requests, datetime)` and `ffmpeg` software
   - `ffmpeg`: `apt install ffmpeg`

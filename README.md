@@ -14,13 +14,21 @@ https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 - clone the repo
 - set required environment variables, tokens and api keys. you can see them in `variables.py` file.
 - download spotdl executable file, rename it to `spotdl` put it beside `spotseek.py` file
-- install necessary python modules `(os, pandas, telebot, re, threading, csv, spotipy, subprocess, requests, datetime)` and `ffmpeg` software
+- install necessary python modules `(os, pandas, telebot, re, threading, csv, spotipy, subprocess, requests, datetime, pydub, mutagen)` and `ffmpeg` software
   - `ffmpeg`: `apt install ffmpeg`
   - `telebot`: `pip install telebot`
   - `spotipy`: `pip install spotipy`
   - `pandas`: `pip install pandas`
+  - `pydub`: `pip install pydub`
+  - `mutagen`: `pip install mutagen`
 - run it with `nohup python3 spotseek.py > /dev/null 2>&1 &` or `nohup python3 spotseek.py &`
-- I didn't cleared my data in `db.csv`, If you are starting the whole infrastructure by yourself remove everything from it except first row which are the headers
+- I might haven't cleared datas in `db.csv`, If you are starting the whole infrastructure by yourself remove everything from it except first row which are the headers
+
+## technical info about how this bot works
+- When you send a spotify link to the bot it searches through its database and if it's the first time it sees this link it will download it with spotdl but if it has done it before it saves time by using previously downloaded files from database.
+- I've set 30 seconds waiting time for 2 requests in a row from 1 user so it won't be spammed
+- I've set log channel and database channel for the bot. It stores every downloaded song in database channel and use it as a storage and prints logs from everything to log channel (errors, user messags, ...)
+- We use spotify api to get tracks from a valid link so you should sign up in https://developer.spotify.com/ and get your own token.
 
 ## status
 I've created This bot to download musics by their link from spotify (single track, album or playlist). It is the first beta test version and there are many bugs to fix and features to add. If you used it I'll be happy to hear about bugs or any other feedbacks.
@@ -41,15 +49,13 @@ Here are some similar telegram bots by others:
 ### users csv columns
 `unique user id` | `last use date and time`
 
-## known bugs and problems so for that could be fixed later
-- some musics duration or size is not shown
-- only 1 single user can use the bot and it can't multitask
-- downloading all songs of an artist is not available
-- searching in database algorithm isn't fast and efficient
-- caption is not always visible
-
-## TO-DO
+## TO-DO: bugs to fix & features to add
 - [ ] (add check for matches with 0 size)
+- [x] (fix caption so it will be shown for repetitive tracks)
+- [x] (some musics metadata is not shown)
+- [ ] (only 1 single user can use the bot and it can't multitask)
+- [ ] (downloading all songs of an artist is not available)
+- [ ] (searching in database algorithm isn't fast and efficient)
 
 ## support and donate
 If you find my works useful you can give me energy with coffee☕️:

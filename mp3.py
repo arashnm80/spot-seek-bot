@@ -1,5 +1,7 @@
 import subprocess
 from variables import directory
+from pydub import AudioSegment # to get song duration
+from mutagen.mp3 import MP3 # to get artist name
 
 def change_cover_image(input_mp3, input_image):
     output_file = 'output.mp3'
@@ -17,3 +19,22 @@ def change_cover_image(input_mp3, input_image):
     subprocess.run(f"rm \"{input_mp3}\"", shell=True, cwd=directory)
     subprocess.run(f"mv \"{output_file}\" \"{input_mp3}\"", shell=True, cwd=directory)
 
+def get_track_duration(file):
+    audio_file = AudioSegment.from_file(file)
+    duration_in_ms = len(audio_file)
+    duration_in_sec = int(duration_in_ms / 1000)
+    return duration_in_sec
+
+def get_artist_name_from_track(file):
+    audio = MP3(file)
+    artist = audio["TPE1"].text[0]
+    return artist
+
+def get_track_title(file):
+    audio = MP3(file)
+    title = audio.get("TIT2")
+    if title:
+        track_title = title.text[0]
+        return track_title
+    else:
+        return "No Track Name Error"

@@ -8,14 +8,18 @@ bot_username = "@SpotSeekBot"
 welcome_message = '''Welcome to @SpotSeekBot
 
 Send me a link from spotify and I'll download it for you.
+
 It can be a track link like this:
 https://open.spotify.com/track/734dz1YaFITwawPpM25fSt
-Or an album like this:
-https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
-Or a playlist like this:
-https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 
-This is currently the beta version of the bot and it's under test. I you found a bug or had any feedbacks I'll be glad to hear from you. \
+Or an album link like this:
+https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
+
+Or a playlist link like this:
+https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs'''
+
+# message for /info command
+info_message = '''This is currently the beta version of the bot and it's under test. If you found a bug or had any feedbacks I'll be glad to hear from you. \
 You can contact me at: @Arashnm80
 
 This bot whole open source is available in github and all interested programmers are welcome to contribute and improve it:
@@ -27,15 +31,6 @@ You can find out more about me and my works through my channel:
 If you find my works helpful you can give me energy with coffee☕️:
 coffeete.ir/arashnm80 (﷼)
 buymeacoffee.com/Arashnm80 (dollar)'''
-
-# message for /info command
-info_message = '''Here are known bugs and problems so for that should be fixed later:
-
-- some musics duration or size is not shown
-- only 1 single user can use the bot and it can't multitask
-- downloading all songs of an artist is not available
-- searching in database algorithm isn't fast and efficient
-- caption is not always visible'''
 
 # download directory
 directory = "./output/"

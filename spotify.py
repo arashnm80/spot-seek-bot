@@ -1,5 +1,5 @@
 import re
-from variables import spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_client_id, spotify_client_secret
+from variables import spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_client_id, spotify_client_secret, welcome_message
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
@@ -12,6 +12,15 @@ def get_link_type(text):
         return "playlist"
     else:
         return False
+
+def get_valid_spotify_links(text):
+    regexes = [spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern]
+    # Create a compiled regular expression object
+    # by joining the regex patterns with the OR operator |
+    regex_combined = re.compile("|".join(regexes))
+    # Find all matches and store them in a list
+    all_matches = [match.group() for match in regex_combined.finditer(text)]
+    return all_matches
 
 def get_track_ids(link):
     #Authentication - without user

@@ -57,7 +57,6 @@ Here are some similar telegram bots by others:
 `unique user id` | `last use date and time`
 
 ## TO-DO: bugs to fix & features to add
-- [ ] (add check for matches with 0 size)
 - [x] (fix caption so it will be shown for repetitive tracks)
 - [x] (some musics metadata is not shown)
 - [ ] (only 1 single user can use the bot and it can't multitask)

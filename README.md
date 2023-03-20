@@ -62,6 +62,7 @@ Here are some similar telegram bots by others:
 - [ ] (only 1 single user can use the bot and it can't multitask)
 - [ ] (downloading all songs of an artist is not available)
 - [ ] (searching in database algorithm isn't fast and efficient)
+- [ ] (Bot only downloads first 100 tracks of playlist)
 
 ## support and donate
 If you find my works useful you can give me energy with coffee☕️:

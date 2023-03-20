@@ -45,7 +45,7 @@ def get_by_index(message):
                 if matches:
                     # download every link:
                     for track_id in matches:
-                        #time.sleep(0.5) # wait a little to alleviate telegram bot limit (https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this)
+                        time.sleep(0.5) # wait a little to alleviate telegram bot limit (https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this)
                         link = "https://open.spotify.com/track/" + track_id 
                         existed_row = get_row_list_csv_search(db_csv_path, db_sp_track_column, track_id)
                         if existed_row:

@@ -28,17 +28,22 @@ def get_track_ids(link):
     sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
     
     # get id of link, album or playlist
-    track_id = link.split("/")[-1].split("?")[0]
+    link_id = link.split("/")[-1].split("?")[0]
 
     link_type = get_link_type(link)
     if link_type == "track":
-        tracks = sp.track(track_id)
+        tracks = sp.track(link_id)
         track_ids = [tracks["id"]]
     elif link_type == "album":
-        tracks = sp.album_tracks(track_id)["items"]
+        tracks = sp.album_tracks(link_id)["items"]
         track_ids = [t["id"] for t in tracks]
     elif link_type == "playlist":
-        tracks = sp.playlist_tracks(track_id)["items"]
+        # handle spotify results paginated in 100 items - https://stackoverflow.com/questions/39086287/spotipy-how-to-read-more-than-100-tracks-from-a-playlist
+        results = sp.playlist_tracks(link_id)
+        tracks = results['items']
+        while results['next']:
+            results = sp.next(results)
+            tracks.extend(results['items'])
         track_ids = [t["track"]["id"] for t in tracks]
     else:
         return []

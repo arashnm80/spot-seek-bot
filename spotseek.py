@@ -9,6 +9,7 @@ from csv_functions import csv_read, db_csv_append, get_row_list_csv_search, get_
 from spotify import get_link_type, get_track_ids, get_valid_spotify_links
 from mp3 import change_cover_image, get_track_duration, get_artist_name_from_track, get_track_title
 import threading # to use lock
+import time # for sleep
 
 # initialize and get ready
 bot = telebot.TeleBot(bot_api)
@@ -44,6 +45,7 @@ def get_by_index(message):
                 if matches:
                     # download every link:
                     for track_id in matches:
+                        #time.sleep(0.5) # wait a little to alleviate telegram bot limit (https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this)
                         link = "https://open.spotify.com/track/" + track_id 
                         existed_row = get_row_list_csv_search(db_csv_path, db_sp_track_column, track_id)
                         if existed_row:

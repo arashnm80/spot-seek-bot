@@ -3,7 +3,7 @@ import telebot
 import os
 import re
 from functions import download, file_list, clear_files
-from variables import welcome_message, info_message, directory, bot_api, database_channel, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username
+from variables import welcome_message, info_message, end_message, directory, bot_api, database_channel, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username
 from log import log, log_channel_id
 from csv_functions import csv_read, db_csv_append, get_row_list_csv_search, get_row_index_csv_search, csv_sort, allow_user
 from spotify import get_link_type, get_track_ids, get_valid_spotify_links
@@ -76,7 +76,7 @@ def get_by_index(message):
                                 # remove files from drive
                                 clear_files(directory)
                     # finish message for user
-                    bot.send_message(message.chat.id, "end")
+                    bot.send_message(message.chat.id, end_message, parse_mode="Markdown")
                 else:
                     log(bot_name + " log:\nNo matches found. this line should not happen in normal behavior becuase it is already checked with regex, if happens is a bug.")
             else:

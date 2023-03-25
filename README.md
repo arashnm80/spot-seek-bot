@@ -28,8 +28,15 @@ chmod +x spotdl
   - `pandas`: `pip install pandas`
   - `pydub`: `pip install pydub`
   - `mutagen`: `pip install mutagen`
-- run it with `nohup python3 spotseek.py > /dev/null 2>&1 &` or `nohup python3 spotseek.py &`
-- I might haven't cleared datas in `db.csv`, If you are starting the whole infrastructure by yourself remove everything from it except first row which are the headers
+- run it with spotseek with:
+```
+nohup python3 spotseek.py > /dev/null 2>&1 &
+```
+or
+```
+nohup python3 spotseek.py &
+```
+- I might haven't cleared datas in `db.csv`, If you are starting the whole infrastructure by yourself remove everything from it except first row which are the headers. you can keep data in db.csv and ask me to give you permission to database to you won't have to redownload all songs.
 
 ## technical info about how this bot works
 - When you send a spotify link to the bot it searches through its database and if it's the first time it sees this link it will download it with spotdl but if it has done it before it saves time by using previously downloaded files from database.

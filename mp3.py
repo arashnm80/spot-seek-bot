@@ -12,7 +12,7 @@ def change_cover_image(input_mp3, input_image):
     subprocess.run(image_size_command, shell=True, cwd=directory)
     
     # add image cover to song
-    add_cover_command = f"ffmpeg -i \"{input_mp3}\" -i \"{low_size_image}\" -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title='Album cover' -metadata:s:v comment='Cover (front)' -loglevel quiet \"{output_file}\""
+    add_cover_command = f"ffmpeg -i \"{input_mp3}\" -i \"{input_image}\" -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title='Album cover' -metadata:s:v comment='Cover (front)' -loglevel quiet \"{output_file}\""
     subprocess.run(add_cover_command, shell=True, cwd=directory)
 
     # delete old mp3 and rename new one to it

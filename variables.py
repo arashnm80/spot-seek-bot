@@ -32,6 +32,12 @@ If you find my works helpful you can give me energy with coffee☕️:
 coffeete.ir/arashnm80 (﷼)
 buymeacoffee.com/Arashnm80 (dollar)'''
 
+# message for user after downloads finished:
+end_message = '''end.
+
+all downloaded songs are also available in our database:
+[Spot Seek Music Database](https://t.me/+wAztHySpQcdkZjk0)'''
+
 # download directory
 directory = "./output/"
 

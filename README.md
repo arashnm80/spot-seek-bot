@@ -9,6 +9,8 @@ https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
   - Or a playlist like this:
 https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 
+all downloaded songs are also available in: [Spot Seek Music Database](https://t.me/+wAztHySpQcdkZjk0)
+
 ## how to deploy as the developer
 - install python and pip `apt install python3-pip`
 - clone the repo

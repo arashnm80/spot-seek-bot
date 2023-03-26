@@ -56,23 +56,29 @@ def get_by_index(message):
                             # upload to telegram and delete from hard drive:
                             for file in file_list(directory): # we send every possible file in directory to bypass searching for file name
                                 change_cover_image(file, "cover.jpg")
-                                # get track metadata to be shown in telegram
-                                track_duration = get_track_duration(directory + file)
-                                track_artist = get_artist_name_from_track(directory + file)
-                                track_title = get_track_title(directory + file)
-                                # first send to database_channel:
                                 audio = open(directory + file, 'rb')
-                                thumb_image = open(directory + "cover_low.jpg", 'rb')
-                                audio_message = bot.send_audio(database_channel, \
-                                        audio, thumb=thumb_image, \
-                                        caption=bot_username, \
-                                        duration=track_duration, \
-                                        performer=track_artist, \
-                                        title=track_title)
-                                # add file to database
-                                db_csv_append(db_csv_path, track_id, audio_message.audio.file_id)
-                                # second send to user:
-                                bot.send_audio(message.chat.id, audio_message.audio.file_id, caption=bot_username)
+                                # check file size because of telegram 50MB limit
+                                file_size = os.fstat(audio.fileno()).st_size
+                                if file_size > 50_000_000:
+                                    too_large_file_error = "Sorry, size of \"{f}\" is more than 50MB and can't be sent".format(f = file)
+                                    bot.send_message(message.chat.id, too_large_file_error)
+                                else:
+                                    # get track metadata to be shown in telegram
+                                    track_duration = get_track_duration(directory + file)
+                                    track_artist = get_artist_name_from_track(directory + file)
+                                    track_title = get_track_title(directory + file)
+                                    thumb_image = open(directory + "cover_low.jpg", 'rb')
+                                    # first send to database_channel:
+                                    audio_message = bot.send_audio(database_channel, \
+                                            audio, thumb=thumb_image, \
+                                            caption=bot_username, \
+                                            duration=track_duration, \
+                                            performer=track_artist, \
+                                            title=track_title)
+                                    # add file to database
+                                    db_csv_append(db_csv_path, track_id, audio_message.audio.file_id)
+                                    # second send to user:
+                                    bot.send_audio(message.chat.id, audio_message.audio.file_id, caption=bot_username)
                                 # remove files from drive
                                 clear_files(directory)
                     # finish message for user

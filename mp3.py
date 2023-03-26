@@ -10,16 +10,19 @@ def change_cover_image(input_mp3, input_image):
     # reduce image size to 320 * 320
     image_size_command = f"ffmpeg -i \"{input_image}\" -vf \"scale=320:-1\" -loglevel quiet \"{low_size_image}\""
     subprocess.run(image_size_command, shell=True, cwd=directory)
+    print("image size reduced to 320*320 successfully")
     
     # add image cover to song
     add_cover_command = f"ffmpeg -i \"{input_mp3}\" -i \"{input_image}\" -map 0:0 -map 1:0 -c copy -id3v2_version 3 -metadata:s:v title='Album cover' -metadata:s:v comment='Cover (front)' -loglevel quiet \"{output_file}\""
     subprocess.run(add_cover_command, shell=True, cwd=directory)
+    print("image set for to song cover")
 
     # delete old mp3 and rename new one to it
     subprocess.run(f"rm \"{input_mp3}\"", shell=True, cwd=directory)
     subprocess.run(f"mv \"{output_file}\" \"{input_mp3}\"", shell=True, cwd=directory)
+    print("new mp3 replaced old one")
 
-def get_track_duration(file):
+def get_track_duration(file): # note: this function is not optimized and crashes on large files
     audio_file = AudioSegment.from_file(file)
     duration_in_ms = len(audio_file)
     duration_in_sec = int(duration_in_ms / 1000)

@@ -72,6 +72,10 @@ Here are some similar telegram bots by others:
 - [ ] downloading all songs of an artist is not available
 - [ ] searching in database algorithm isn't fast and efficient
 - [x] ~Bot only downloads first 100 tracks of playlist~
+- [ ] find a clean way to give access to database to next bot maintainers
+- [ ] merge database of all spotify downloaders together
+- [ ] support of other exotic formats like `OpEn.SpoTify...` with or without `http`
+- [ ] support searching name of song by user
 
 ## support and donate
 If you find my works useful you can give me energy with coffee☕️:

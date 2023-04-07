@@ -30,14 +30,15 @@ def start_message(message):
 
 @bot.message_handler(regexp = spotify_correct_link_pattern)
 def get_by_index(message):
-    bot.send_message(message.chat.id, "Ok, wait for me to process...")
+    temp_message1 = bot.send_message(message.chat.id, "Ok, wait for me to process...")
     log(bot_name + " log:\ncorrect link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
     try:
         # make it one user at a time
         with lock:
             if allow_user(message.chat.id):
                 log(bot_name + " log:\nuser " + str(message.chat.id) + " is allowed to use the bot.")
-                bot.send_message(message.chat.id, "Start downloading...\nIt can be very fast or very long, be patient.")
+                bot.delete_message(message.chat.id, temp_message1.message_id)
+                temp_message2 = bot.send_message(message.chat.id, "Start downloading...\nIt can be very fast or very long, be patient.")
                 clear_files(directory)
                 valid_spotify_links_in_user_text = get_valid_spotify_links(message.text)
                 # if user sends multiple links combined with normal text we only extract and analyze first one so the bot won't be spammed
@@ -82,14 +83,15 @@ def get_by_index(message):
                                 # remove files from drive
                                 clear_files(directory)
                     # finish message for user
-                    bot.send_message(message.chat.id, end_message, parse_mode="Markdown")
+                    bot.delete_message(message.chat.id, temp_message2.message_id)
+                    bot.send_message(message.chat.id, end_message, parse_mode="Markdown", disable_web_page_preview=True)
                 else:
                     log(bot_name + " log:\nNo matches found. this line should not happen in normal behavior becuase it is already checked with regex, if happens is a bug.")
             else:
                 bot.send_message(message.chat.id, "you should wait " + str(user_request_wait) + " seconds between 2 requests")
                 log(bot_name + " log:\nuser " + str(message.chat.id) + " isn't allowed to use the bot")
     except Exception as e:
-        log(bot_name + " log:\nAn error occurred: ", str(e))
+        log(bot_name + " log:\nAn error occurred: " + str(e))
         bot.send_message(message.chat.id, "Sorry, my process wasn't successful :(")
 
 @bot.message_handler(func=lambda message: True)

@@ -76,6 +76,7 @@ Here are some similar telegram bots by others:
 - [ ] merge database of all spotify downloaders together
 - [ ] support of other exotic formats like `OpEn.SpoTify...` with or without `http`
 - [ ] support searching name of song by user
+- [ ] find a way to shorten database (audio IDs are very long)
 
 ## support and donate
 If you find my works useful you can give me energy with coffee☕️:

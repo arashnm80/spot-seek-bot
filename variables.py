@@ -33,10 +33,15 @@ coffeete.ir/arashnm80 (﷼)
 buymeacoffee.com/Arashnm80 (dollar)'''
 
 # message for user after downloads finished:
+#end_message = '''end.
+#
+#all downloaded songs are also available in our database:
+#[Spot Seek Music Database](https://t.me/+wAztHySpQcdkZjk0)'''
+
 end_message = '''end.
 
-all downloaded songs are also available in our database:
-[Spot Seek Music Database](https://t.me/+wAztHySpQcdkZjk0)'''
+You can support this project by giving ⭐️stars⭐️ in github:
+https://github.com/arashnm80/spot-seek-bot'''
 
 # download directory
 directory = "./output/"

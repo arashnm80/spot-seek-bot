@@ -67,6 +67,11 @@ spotify_correct_link_pattern = spotify_track_link_pattern + "|" + spotify_album_
 log_bot_url = "https://api.telegram.org/bot" + bot_api + "/"
 log_channel_id = os.environ['LOG_CHANNEL_ID']
 
+# promote channel
+promote_channel_username = "@Arashnm80_Channel"
+promote_channel_link = "https://t.me/Arashnm80_Channel"
+not_subscribed_to_channel_message = '''Join [Arashnm80 Channel](https://t.me/Arashnm80_Channel) and send your link again.'''
+
 # spotify
 spotify_client_id = os.environ["SPOTIFY_TEST_APP_CLIENT_ID"]
 spotify_client_secret = os.environ["SPOTIFY_TEST_APP_CLIENT_SECRET"]

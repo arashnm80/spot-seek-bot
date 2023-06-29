@@ -1,9 +1,10 @@
 #!/usr/bin/python3
 import telebot
+from telebot import types
 import os
 import re
-from functions import download, file_list, clear_files
-from variables import welcome_message, info_message, end_message, directory, bot_api, database_channel, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username
+from functions import download, file_list, clear_files, check_membership
+from variables import welcome_message, info_message, end_message, directory, bot_api, database_channel, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username, promote_channel_username, not_subscribed_to_channel_message, promote_channel_link
 from log import log, log_channel_id
 from csv_functions import csv_read, db_csv_append, get_row_list_csv_search, get_row_index_csv_search, csv_sort, allow_user
 from spotify import get_link_type, get_track_ids, get_valid_spotify_links
@@ -30,6 +31,21 @@ def start_message(message):
 
 @bot.message_handler(regexp = spotify_correct_link_pattern)
 def get_by_index(message):
+    # Check the membership status and stop continuing if user is not a member
+    is_member = check_membership(promote_channel_username, message.chat.id)
+    if is_member:
+        log(bot_name + " log:\nuser " + str(message.chat.id) + " is member of channel.")
+    else:
+        log(bot_name + " log:\nuser " + str(message.chat.id) + " is not member of channel.")
+        # Create an inline keyboard markup
+        keyboard = types.InlineKeyboardMarkup()
+        # Create an inline keyboard button with a channel link
+        channel_button = types.InlineKeyboardButton(text='Join', url=promote_channel_link)
+        # Add the button to the inline keyboard
+        keyboard.add(channel_button)
+        bot.send_message(message.chat.id, not_subscribed_to_channel_message, parse_mode="Markdown", disable_web_page_preview = True, reply_markup = keyboard)
+        return # stops going any further
+
     temp_message1 = bot.send_message(message.chat.id, "Ok, wait for me to process...")
     log(bot_name + " log:\ncorrect link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
     try:

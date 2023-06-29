@@ -1,7 +1,8 @@
 import subprocess
 import os
-from variables import directory
+from variables import directory, bot_api
 from spotify import get_track_image
+import requests
 
 def download(track_link):
     # download track
@@ -36,4 +37,22 @@ def clear_files(folder_path):
                     print(f"Deleted {filename}")
             except Exception as e:
                 print(f"Error deleting {filename}: {e}")
+
+def check_membership(channel, user):
+    # Send a request to the Telegram Bot API
+    response = requests.get(f'https://api.telegram.org/bot{bot_api}/getChatMember', params={'chat_id': channel, 'user_id': user})
+
+    # Parse the response
+    data = response.json()
+    if data['ok']:
+        member_status = data['result']['status']
+        if member_status == 'member' or member_status == 'creator' or member_status == 'administrator':
+            print('The user is a member of the channel.')
+            return True
+        else:
+            print('The user is not a member of the channel.')
+            return False
+    else:
+        print('Failed to retrieve chat member information.')
+        return False
 

@@ -9,13 +9,13 @@ welcome_message = '''Welcome to @SpotSeekBot
 
 Send me a link from spotify and I'll download it for you.
 
-It can be a track link like this:
+It can be a track link like:
 https://open.spotify.com/track/734dz1YaFITwawPpM25fSt
 
-Or an album link like this:
+Or an album link like:
 https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
 
-Or a playlist link like this:
+Or a playlist link like:
 https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs'''
 
 # message for /info command
@@ -36,6 +36,17 @@ end_message = '''end.
 
 You can support this project by giving stars⭐️ in github:
 https://github.com/arashnm80/spot-seek-bot'''
+
+wrong_link_message = '''This is not a correct spotify link.
+
+You should send a track link like:
+https://open.spotify.com/track/734dz1YaFITwawPpM25fSt
+
+Or an album link like:
+https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
+
+Or a playlist link like:
+https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs'''
 
 # download directory
 directory = "./output/"

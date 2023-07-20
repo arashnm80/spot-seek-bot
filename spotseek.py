@@ -4,7 +4,7 @@ from telebot import types
 import os
 import re
 from functions import download, file_list, clear_files, check_membership
-from variables import welcome_message, info_message, end_message, directory, bot_api, database_channel, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username, promote_channel_username, not_subscribed_to_channel_message, promote_channel_link
+from variables import welcome_message, info_message, end_message, wrong_link_message, directory, bot_api, database_channel, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username, promote_channel_username, not_subscribed_to_channel_message, promote_channel_link
 from log import log, log_channel_id
 from csv_functions import csv_read, db_csv_append, get_row_list_csv_search, get_row_index_csv_search, csv_sort, allow_user
 from spotify import get_link_type, get_track_ids, get_valid_spotify_links
@@ -112,7 +112,7 @@ def get_by_index(message):
 
 @bot.message_handler(func=lambda message: True)
 def echo_all(message):
-    bot.reply_to(message, "this message doesn't look like a supported spotify link.")
+    bot.reply_to(message, wrong_link_message, disable_web_page_preview=True)
     log(bot_name + " log:\nwrong link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
 
 def main():

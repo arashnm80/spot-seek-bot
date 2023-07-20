@@ -26,7 +26,7 @@ def start_message(message):
 
 @bot.message_handler(commands = ['info'])
 def start_message(message):
-    bot.send_message(message.chat.id, info_message, disable_web_page_preview=True)
+    bot.send_message(message.chat.id, info_message, parse_mode="Markdown", disable_web_page_preview=True)
     log(bot_name + " log:\n/info command sent from user: " + str(message.chat.id))
 
 @bot.message_handler(regexp = spotify_correct_link_pattern)

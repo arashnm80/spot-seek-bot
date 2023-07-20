@@ -4,7 +4,7 @@ from telebot import types
 import os
 import re
 from functions import download, file_list, clear_files, check_membership
-from variables import welcome_message, info_message, end_message, wrong_link_message, directory, bot_api, database_channel, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username, promote_channel_username, not_subscribed_to_channel_message, promote_channel_link
+from variables import welcome_message, info_message, deezer_link_message, end_message, wrong_link_message, directory, bot_api, database_channel, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, deezer_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username, promote_channel_username, not_subscribed_to_channel_message, promote_channel_link
 from log import log, log_channel_id
 from csv_functions import csv_read, db_csv_append, get_row_list_csv_search, get_row_index_csv_search, csv_sort, allow_user
 from spotify import get_link_type, get_track_ids, get_valid_spotify_links
@@ -28,6 +28,11 @@ def start_message(message):
 def start_message(message):
     bot.send_message(message.chat.id, info_message, parse_mode="Markdown", disable_web_page_preview=True)
     log(bot_name + " log:\n/info command sent from user: " + str(message.chat.id))
+
+@bot.message_handler(regexp = deezer_link_pattern)
+def deezer_link_pattern(message):
+    bot.send_message(message.chat.id, deezer_link_message, parse_mode="Markdown", disable_web_page_preview=True)
+    log(bot_name + " log:\ndeezer link sent from user: " + str(message.chat.id))
 
 @bot.message_handler(regexp = spotify_correct_link_pattern)
 def get_by_index(message):

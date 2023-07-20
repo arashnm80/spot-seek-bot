@@ -26,6 +26,9 @@ You can give me energy with coffee☕️:
 [BuyMeACoffee](https://www.buymeacoffee.com/Arashnm80) (US $)
 [Coffeete](https://www.coffeete.ir/Arashnm80) (IR ريال)'''
 
+deezer_link_message = '''This bot is created to download from spotify but you sent a deezer link.
+Send the link of your track/album/playlist from spotify'''
+
 # message for user after downloads finished:
 #end_message = '''end.
 #
@@ -67,6 +70,7 @@ spotify_correct_link_pattern = spotify_track_link_pattern + "|" + spotify_album_
 #spotify_track_id_pattern = r"spotify\.com\/track\/(\w+)(?:\?.*)?$"
 #spotify_album_id_pattern = r"spotify\.com\/album\/(\w+)(?:\?.*)?$"
 #spotify_playlist_id_pattern = r"spotify\.com\/playlist\/(\w+)(?:\?.*)?$"
+deezer_link_pattern = r'https?:\/\/(?:www\.)?deezer\.com\/(?:\w{2}\/)?(?:\w+\/)?(?:track|album|artist|playlist)\/\d+'
 
 # log chanel
 log_bot_url = "https://api.telegram.org/bot" + bot_api + "/"

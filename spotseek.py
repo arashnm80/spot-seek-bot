@@ -35,7 +35,7 @@ def deezer_link_pattern(message):
     log(bot_name + " log:\ndeezer link sent from user: " + str(message.chat.id))
 
 @bot.message_handler(regexp = spotify_correct_link_pattern)
-def get_by_index(message):
+def handle_correct_spotify_link(message):
     # Check the membership status and stop continuing if user is not a member
     is_member = check_membership(promote_channel_username, message.chat.id)
     if is_member:
@@ -116,7 +116,7 @@ def get_by_index(message):
         bot.send_message(message.chat.id, "Sorry, my process wasn't successful :(")
 
 @bot.message_handler(func=lambda message: True)
-def echo_all(message):
+def all_other_forms_of_messages(message):
     bot.reply_to(message, wrong_link_message, disable_web_page_preview=True)
     log(bot_name + " log:\nwrong link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
 

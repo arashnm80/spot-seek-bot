@@ -47,17 +47,13 @@ nohup python3 spotseek.py &
 - We use spotify api to get tracks from a valid link so you should sign up in https://developer.spotify.com/ and get your own token.
 
 ## status
-I've created This bot to download musics by their link from spotify (single track, album or playlist). It is the first beta test version and there are many bugs to fix and features to add. If you used it I'll be happy to hear about bugs or any other feedbacks.
+I've created This bot to download musics by their link from spotify (single track, album or playlist)..
 
 Also if you are a programmer you are welcome to contribute and improve the project or use it for yourself.
 
 This bot is not a new idea and many others have done this before, So I'm not sure how much it is worth to spend time on. It depends on many factors like my time, server costs and your feedbacks, so for now let's look at it just as a fun weekend project.😉✌️
 
-Here are some similar telegram bots by others:
-- [Spotdlrobot](https://t.me/Spotdlrobot) (by Iranian programmer, [aliilapro](https://github.com/ALIILAPRO))
-- [DeezerMusicBot](https://t.me/DeezerMusicBot)
-- [RegaSpotify_Bot](https://t.me/RegaSpotify_Bot)
-- [MusicsHunterbot](https://t.me/MusicsHunterbot)
+There is also a similar bot created by my friend [aliilapro](https://github.com/ALIILAPRO): [Spotdlrobot](https://t.me/Spotdlrobot)
 
 ## csv files columns guide
 ### database csv columns
@@ -69,12 +65,11 @@ Here are some similar telegram bots by others:
 - [x] ~fix caption so it will be shown for repetitive tracks~
 - [x] ~some musics metadata is not shown~
 - [ ] only 1 single user can use the bot and it can't multitask
-- [ ] downloading all songs of an artist is not available
 - [ ] searching in database algorithm isn't fast and efficient
-- [x] ~Bot only downloads first 100 tracks of playlist~
+- [x] ~Download playlists with more thatn 100 songs~
 - [ ] find a clean way to give access to database to next bot maintainers
 - [ ] merge database of all spotify downloaders together
-- [ ] support of other exotic formats like `OpEn.SpoTify...` with or without `http`
+- [x] ~showing message to user when link from other services like deezer is sent.~
 - [ ] support searching name of song by user
 - [ ] find a way to shorten database (audio IDs are very long)
 

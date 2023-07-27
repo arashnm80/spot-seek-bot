@@ -80,7 +80,7 @@ log_channel_id = os.environ['LOG_CHANNEL_ID']
 promote_channel_username = "@Arashnm80_Channel"
 promote_channel_link = "https://t.me/Arashnm80_Channel"
 not_subscribed_to_channel_message = '''Your link is correct✅.
-Join [Arashnm80 Channel](https://t.me/Arashnm80_Channel) and send your link again.'''
+Join to get access to database, then send your link again.'''
 
 # spotify
 spotify_client_id = os.environ["SPOTIFY_TEST_APP_CLIENT_ID"]

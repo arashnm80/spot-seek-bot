@@ -51,8 +51,6 @@ I've created This bot to download musics by their link from spotify (single trac
 
 Also if you are a programmer you are welcome to contribute and improve the project or use it for yourself.
 
-This bot is not a new idea and many others have done this before, So I'm not sure how much it is worth to spend time on. It depends on many factors like my time, server costs and your feedbacks, so for now let's look at it just as a fun weekend project.😉✌️
-
 There is also a similar bot created by my friend [aliilapro](https://github.com/ALIILAPRO): [Spotdlrobot](https://t.me/Spotdlrobot)
 
 ## csv files columns guide

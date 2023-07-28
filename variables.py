@@ -63,9 +63,9 @@ bot_api = os.environ["SPOT_SEEK_BOT_API"]
 database_channel = os.environ["MUSIC_DATABASE_ID"]
 
 # spotify regex patterns
-spotify_track_link_pattern = r'https:\/\/open\.spotify\.com\/(intl-pt\/)?track\/[a-zA-Z0-9]+'
-spotify_album_link_pattern = r'https:\/\/open\.spotify\.com\/(intl-pt\/)?album\/[a-zA-Z0-9]+'
-spotify_playlist_link_pattern = r'https:\/\/open\.spotify\.com\/(intl-pt\/)?playlist\/[a-zA-Z0-9]+'
+spotify_track_link_pattern = r'https:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?track\/[a-zA-Z0-9]+'
+spotify_album_link_pattern = r'https:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?album\/[a-zA-Z0-9]+'
+spotify_playlist_link_pattern = r'https:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?playlist\/[a-zA-Z0-9]+'
 spotify_correct_link_pattern = spotify_track_link_pattern + "|" + spotify_album_link_pattern + "|" + spotify_playlist_link_pattern
 #spotify_track_id_pattern = r"spotify\.com\/track\/(\w+)(?:\?.*)?$"
 #spotify_album_id_pattern = r"spotify\.com\/album\/(\w+)(?:\?.*)?$"

@@ -29,6 +29,12 @@ You can give me energy with coffee☕️:
 deezer_link_message = '''This bot is created to download from spotify but you sent a deezer link.
 Send the link of your track/album/playlist from spotify'''
 
+soundcloud_link_message = '''This bot is created to download from spotify but you sent a soundcloud link.
+Send the link of your track/album/playlist from spotify'''
+
+youtube_link_message = '''This bot is created to download from spotify but you sent a youtube link.
+Send the link of your track/album/playlist from spotify'''
+
 # message for user after downloads finished:
 #end_message = '''end.
 #
@@ -71,6 +77,8 @@ spotify_correct_link_pattern = spotify_track_link_pattern + "|" + spotify_album_
 #spotify_album_id_pattern = r"spotify\.com\/album\/(\w+)(?:\?.*)?$"
 #spotify_playlist_id_pattern = r"spotify\.com\/playlist\/(\w+)(?:\?.*)?$"
 deezer_link_pattern = r'https?:\/\/(?:www\.)?deezer\.com\/(?:\w{2}\/)?(?:\w+\/)?(?:track|album|artist|playlist)\/\d+'
+soundcloud_link_pattern = r"(?:https?://)?(?:www\.)?soundcloud\.com/([a-zA-Z0-9-_]+)/([a-zA-Z0-9-_]+)"
+youtube_link_pattern = r"(?:(?:https?:)?//)?(?:www\.)?(?:(?:youtube\.com/(?:watch\?.*v=|embed/|v/)|youtu.be/))([\w-]{11})"
 
 # log chanel
 log_bot_url = "https://api.telegram.org/bot" + bot_api + "/"
@@ -100,3 +108,9 @@ datetime_format = "%Y/%m/%d-%H:%M:%S"
 
 # necessary time in seconds for user to wait between 2 requests
 user_request_wait = 30
+
+unsuccessful_process_message = '''Sorry, my process wasn't sucessful :(
+
+But you can try another link or use the bot again after some time, it might help.
+
+You can also search for your favorite tracks / artists in my huge [database](https://t.me/+wAztHySpQcdkZjk0)'''

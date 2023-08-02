@@ -58,7 +58,11 @@ def handle_correct_spotify_link(message):
         channel_button = types.InlineKeyboardButton(text='Join', url=promote_channel_link)
         # Add the button to the inline keyboard
         keyboard.add(channel_button)
-        bot.send_message(message.chat.id, not_subscribed_to_channel_message, parse_mode="Markdown", disable_web_page_preview = True, reply_markup = keyboard)
+        bot.send_message(message.chat.id,
+                         not_subscribed_to_channel_message,
+                         parse_mode="Markdown",
+                         disable_web_page_preview=True,
+                         reply_markup=keyboard)
         return # stops going any further
 
     temp_message1 = bot.send_message(message.chat.id, "Ok, wait for me to process...")
@@ -77,7 +81,8 @@ def handle_correct_spotify_link(message):
                 if matches:
                     # download every link:
                     for track_id in matches:
-                        time.sleep(0.5) # wait a little to alleviate telegram bot limit (https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this)
+                        time.sleep(0.5) # wait a little to alleviate telegram bot limit
+                        # (https://core.telegram.org/bots/faq#my-bot-is-hitting-limits-how-do-i-avoid-this)
                         link = "https://open.spotify.com/track/" + track_id 
                         existed_row = get_row_list_csv_search(db_csv_path, db_sp_track_column, track_id)
                         if existed_row:
@@ -117,7 +122,9 @@ def handle_correct_spotify_link(message):
                     bot.delete_message(message.chat.id, temp_message2.message_id)
                     bot.send_message(message.chat.id, end_message, parse_mode="Markdown", disable_web_page_preview=True)
                 else:
-                    log(bot_name + " log:\nNo matches found. this line should not happen in normal behavior becuase it is already checked with regex, if happens is a bug.")
+                    log(bot_name + " log:\nNo matches found. \
+                                     this line should not happen in normal behavior\
+                                     becuase it is already checked with regex, if happens is a bug.")
             else:
                 bot.send_message(message.chat.id, "you should wait " + str(user_request_wait) + " seconds between 2 requests")
                 log(bot_name + " log:\nuser " + str(message.chat.id) + " isn't allowed to use the bot")

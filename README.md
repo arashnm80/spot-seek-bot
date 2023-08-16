@@ -23,13 +23,14 @@ wget -O spotdl https://github.com/spotDL/spotify-downloader/releases/download/v4
 ```
 chmod +x spotdl
 ```
-- install necessary python modules `(os, pandas, telebot, re, threading, csv, spotipy, subprocess, requests, datetime, pydub, mutagen, time)` and `ffmpeg` software
-  - `ffmpeg`: `apt install ffmpeg`
-  - `telebot`: `pip install telebot`
-  - `spotipy`: `pip install spotipy`
-  - `pandas`: `pip install pandas`
-  - `pydub`: `pip install pydub`
-  - `mutagen`: `pip install mutagen`
+- install necessary python modules `(os, pandas, telebot, re, threading, csv, spotipy, subprocess, requests, datetime, pydub, mutagen, time)` all at once with:
+```
+pip install -r requirements.txt
+```
+- install `ffmpeg` with:
+```
+apt install ffmpeg
+```
 - run it with spotseek with:
 ```
 nohup python3 spotseek.py > /dev/null 2>&1 &

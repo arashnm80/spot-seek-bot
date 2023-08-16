@@ -1,0 +1,6 @@
+telebot
+spotipy
+pandas
+pydub
+mutagen
+

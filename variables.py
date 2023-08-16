@@ -91,8 +91,8 @@ not_subscribed_to_channel_message = '''Your link is correct✅.
 Join to get access to database, then send your link again.'''
 
 # spotify
-spotify_client_id = os.environ["SPOTIFY_TEST_APP_CLIENT_ID"]
-spotify_client_secret = os.environ["SPOTIFY_TEST_APP_CLIENT_SECRET"]
+spotify_client_id = os.environ["SPOTIFY_APP_CLIENT_ID"]
+spotify_client_secret = os.environ["SPOTIFY_APP_CLIENT_SECRET"]
 
 # database csv columns
 db_time_column = 0

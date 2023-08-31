@@ -1,13 +1,18 @@
 import subprocess
 import os
-from variables import directory, bot_api
+from variables import directory, bot_api, warp_mode
 from spotify import get_track_image
 import requests
 
 def download(track_link):
     # download track
     print("start downloading: " + track_link)
-    command = ['../spotdl', "--bitrate", "320k", track_link]
+    normal_download_command = ['../spotdl', "--bitrate", "320k", track_link] # nomal download
+    warp_download_command = ['proxychains', '-f', '../proxychains.conf', '../spotdl', "--bitrate", "320k", track_link] # download with warp
+    if warp_mode:
+        command = warp_download_command # download with proxychains and warp from port 40000
+    else:
+        command = normal_download_command # normal download
     subprocess.run(command, cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     print("end downloading: " + track_link)
 

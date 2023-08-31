@@ -84,6 +84,9 @@ youtube_link_pattern = r"(?:(?:https?:)?//)?(?:www\.)?(?:(?:youtube\.com/(?:watc
 log_bot_url = "https://api.telegram.org/bot" + bot_api + "/"
 log_channel_id = os.environ['LOG_CHANNEL_ID']
 
+# specify to use warp or not
+warp_mode = True
+
 # promote channel
 promote_channel_username = "@Arashnm80_Channel"
 promote_channel_link = "https://t.me/Arashnm80_Channel"

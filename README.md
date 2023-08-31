@@ -11,7 +11,7 @@ https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 
 all downloaded songs are also available in: [Spot Seek Music Database](https://t.me/+wAztHySpQcdkZjk0)
 
-## how to deploy as the developer
+## how to deploy as the developer (I'm writing this guide for ubuntu)
 - install python and pip `apt install python3-pip`
 - clone the repo
 - set required environment variables, tokens and api keys. you can see them in `variables.py` file.
@@ -31,6 +31,12 @@ pip install -r requirements.txt
 ```
 apt install ffmpeg
 ```
+- install `warp` and `proxychians` if you want to use `warp_mode` in `variables.py` (if not, just set it as `False`):
+  - `warp`: I got it as a side feature by installing [MHSanaei 3x-ui](https://github.com/MHSanaei/3x-ui). You might be able to install it via [fscarmen warp](https://github.com/fscarmen/warp) too.
+  - `proxychains` (I've written config based on port 40000 in `proxychains.conf` file):
+```
+sudo apt-get install proxychains4
+```
 - run it with spotseek with:
 ```
 nohup python3 spotseek.py > /dev/null 2>&1 &
@@ -46,6 +52,7 @@ nohup python3 spotseek.py &
 - I've set 30 seconds waiting time for 2 requests in a row from 1 user so it won't be spammed
 - I've set log channel and database channel for the bot. It stores every downloaded song in database channel and use it as a storage and prints logs from everything to log channel (errors, user messags, ...)
 - We use spotify api to get tracks from a valid link so you should sign up in https://developer.spotify.com/ and get your own token.
+- All mp3 files are downloaded with high 320k quality.
 
 ## status
 I've created This bot to download musics by their link from spotify (single track, album or playlist)..

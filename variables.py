@@ -16,15 +16,18 @@ Or an album link like:
 https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
 
 Or a playlist link like:
-https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs'''
+https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
+
+
+NOTE: I might not answer right away but I always answer😉❤️'''
 
 # message for /info command
 info_message = '''This bot's whole open source is available in github and all interested programmers are welcome to contribute and improve it:
 https://github.com/arashnm80/spot-seek-bot
 
-You can give me energy with coffee☕️:
-[BuyMeACoffee](https://www.buymeacoffee.com/Arashnm80) (US $)
-[Coffeete](https://www.coffeete.ir/Arashnm80) (IR ريال)'''
+You can give me energy with your donation☕️
+possible methods:
+Arashnm80.com/donate'''
 
 deezer_link_message = '''This bot is created to download from spotify but you sent a deezer link.
 Send the link of your track/album/playlist from spotify'''
@@ -69,10 +72,11 @@ bot_api = os.environ["SPOT_SEEK_BOT_API"]
 database_channel = os.environ["MUSIC_DATABASE_ID"]
 
 # spotify regex patterns
+spotify_shortened_link_pattern = r'https:\/\/spotify\.link\/[A-Za-z0-9]+'
 spotify_track_link_pattern = r'https:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?track\/[a-zA-Z0-9]+'
 spotify_album_link_pattern = r'https:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?album\/[a-zA-Z0-9]+'
 spotify_playlist_link_pattern = r'https:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?playlist\/[a-zA-Z0-9]+'
-spotify_correct_link_pattern = spotify_track_link_pattern + "|" + spotify_album_link_pattern + "|" + spotify_playlist_link_pattern
+spotify_correct_link_pattern = spotify_track_link_pattern + "|" + spotify_album_link_pattern + "|" + spotify_playlist_link_pattern + spotify_shortened_link_pattern
 #spotify_track_id_pattern = r"spotify\.com\/track\/(\w+)(?:\?.*)?$"
 #spotify_album_id_pattern = r"spotify\.com\/album\/(\w+)(?:\?.*)?$"
 #spotify_playlist_id_pattern = r"spotify\.com\/playlist\/(\w+)(?:\?.*)?$"

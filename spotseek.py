@@ -4,10 +4,10 @@ from telebot import types
 import os
 import re
 from functions import download, file_list, clear_files, check_membership
-from variables import welcome_message, info_message, deezer_link_message, soundcloud_link_message, youtube_link_message, end_message, wrong_link_message, directory, bot_api, database_channel, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, deezer_link_pattern, soundcloud_link_pattern, youtube_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username, promote_channel_username, not_subscribed_to_channel_message, promote_channel_link, unsuccessful_process_message
+from variables import welcome_message, info_message, deezer_link_message, soundcloud_link_message, youtube_link_message, end_message, wrong_link_message, directory, bot_api, database_channel, spotify_shortened_link_pattern, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_correct_link_pattern, deezer_link_pattern, soundcloud_link_pattern, youtube_link_pattern, db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, ucsv_user_id_column, ucsv_last_time_column, user_request_wait, bot_name, bot_username, promote_channel_username, not_subscribed_to_channel_message, promote_channel_link, unsuccessful_process_message
 from log import log, log_channel_id
 from csv_functions import csv_read, db_csv_append, get_row_list_csv_search, get_row_index_csv_search, csv_sort, allow_user
-from spotify import get_link_type, get_track_ids, get_valid_spotify_links
+from spotify import get_redirect_link, get_link_type, get_track_ids, get_valid_spotify_links
 from mp3 import change_cover_image, get_track_duration, get_artist_name_from_track, get_track_title
 import threading # to use lock
 import time # for sleep
@@ -73,11 +73,19 @@ def handle_correct_spotify_link(message):
             if allow_user(message.chat.id):
                 log(bot_name + " log:\nuser " + str(message.chat.id) + " is allowed to use the bot.")
                 bot.delete_message(message.chat.id, temp_message1.message_id)
-                temp_message2 = bot.send_message(message.chat.id, "Start downloading...\nIt can be very fast or very long, be patient.")
+                temp_message2 = bot.send_message(message.chat.id, "Start downloading...\nIt can be very fast or very slow, be patient.")
                 clear_files(directory)
                 valid_spotify_links_in_user_text = get_valid_spotify_links(message.text)
+
                 # if user sends multiple links combined with normal text we only extract and analyze first one so the bot won't be spammed
-                matches = get_track_ids(valid_spotify_links_in_user_text[0])
+                first_link = valid_spotify_links_in_user_text[0]
+
+                # if the link is shortened convert "spotify.link" to "open.spotify.com"
+                if get_link_type(first_link) == "shortened":
+                    log(bot_name + " log:\nshortened link sent from user: " + str(message.chat.id))
+                    first_link = get_redirect_link(first_link)
+                
+                matches = get_track_ids(first_link)
                 if matches:
                     # download every link:
                     for track_id in matches:
@@ -126,8 +134,8 @@ def handle_correct_spotify_link(message):
                                      this line should not happen in normal behavior\
                                      becuase it is already checked with regex, if happens is a bug.")
             else:
-                bot.send_message(message.chat.id, "you should wait " + str(user_request_wait) + " seconds between 2 requests")
-                log(bot_name + " log:\nuser " + str(message.chat.id) + " isn't allowed to use the bot")
+                bot.send_message(message.chat.id, "you should wait " + str(user_request_wait) + " seconds between requests")
+                log(bot_name + " log:\nuser " + str(message.chat.id) + " isn't allowed to use the bot⏰")
     except Exception as e:
         log(bot_name + " log:\nAn error occurred: " + str(e))
         bot.send_message(message.chat.id, unsuccessful_process_message, parse_mode="Markdown")
@@ -135,7 +143,7 @@ def handle_correct_spotify_link(message):
 @bot.message_handler(func=lambda message: True)
 def all_other_forms_of_messages(message):
     bot.reply_to(message, wrong_link_message, disable_web_page_preview=True)
-    log(bot_name + " log:\nwrong link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
+    log(bot_name + " log:\n❌wrong link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
 
 def main():
     bot.infinity_polling()

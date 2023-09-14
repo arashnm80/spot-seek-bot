@@ -1,7 +1,11 @@
 import re
-from variables import spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_client_id, spotify_client_secret, welcome_message
+from variables import spotify_shortened_link_pattern, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_client_id, spotify_client_secret, welcome_message
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+
+def get_redirect_link(shortened_link):
+    response = requests.head(shortened_link, allow_redirects=True)
+    return response.url
 
 def get_link_type(text):
     if re.match(spotify_track_link_pattern, text):
@@ -10,11 +14,13 @@ def get_link_type(text):
         return "album"
     elif re.match(spotify_playlist_link_pattern, text):
         return "playlist"
+    elif re.match(spotify_shortened_link_pattern, text):
+        return "shortened"
     else:
         return False
 
 def get_valid_spotify_links(text):
-    regexes = [spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern]
+    regexes = [spotify_shortened_link_pattern, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern]
     # Create a compiled regular expression object
     # by joining the regex patterns with the OR operator |
     regex_combined = re.compile("|".join(regexes))

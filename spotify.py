@@ -2,6 +2,7 @@ import re
 from variables import spotify_shortened_link_pattern, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_client_id, spotify_client_secret, welcome_message
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
+import requests # for get_redirect_link
 
 def get_redirect_link(shortened_link):
     response = requests.head(shortened_link, allow_redirects=True)

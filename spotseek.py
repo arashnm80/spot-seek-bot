@@ -46,24 +46,24 @@ def youtube_link_handler(message):
 
 @bot.message_handler(regexp = spotify_correct_link_pattern)
 def handle_correct_spotify_link(message):
-    # Check the membership status and stop continuing if user is not a member
-    is_member = check_membership(promote_channel_username, message.chat.id)
-    if is_member:
-        log(bot_name + " log:\nuser " + str(message.chat.id) + " is member of channel.")
-    else:
-        log(bot_name + " log:\nuser " + str(message.chat.id) + " is not member of channel.")
-        # Create an inline keyboard markup
-        keyboard = types.InlineKeyboardMarkup()
-        # Create an inline keyboard button with a channel link
-        channel_button = types.InlineKeyboardButton(text='Join', url=promote_channel_link)
-        # Add the button to the inline keyboard
-        keyboard.add(channel_button)
-        bot.send_message(message.chat.id,
-                         not_subscribed_to_channel_message,
-                         parse_mode="Markdown",
-                         disable_web_page_preview=True,
-                         reply_markup=keyboard)
-        return # stops going any further
+    # # Check the membership status and stop continuing if user is not a member
+    # is_member = check_membership(promote_channel_username, message.chat.id)
+    # if is_member:
+    #     log(bot_name + " log:\nuser " + str(message.chat.id) + " is member of channel.")
+    # else:
+    #     log(bot_name + " log:\nuser " + str(message.chat.id) + " is not member of channel.")
+    #     # Create an inline keyboard markup
+    #     keyboard = types.InlineKeyboardMarkup()
+    #     # Create an inline keyboard button with a channel link
+    #     channel_button = types.InlineKeyboardButton(text='Join', url=promote_channel_link)
+    #     # Add the button to the inline keyboard
+    #     keyboard.add(channel_button)
+    #     bot.send_message(message.chat.id,
+    #                      not_subscribed_to_channel_message,
+    #                      parse_mode="Markdown",
+    #                      disable_web_page_preview=True,
+    #                      reply_markup=keyboard)
+    #     return # stops going any further
 
     temp_message1 = bot.send_message(message.chat.id, "Ok, wait for me to process...")
     log(bot_name + " log:\ncorrect link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
@@ -72,7 +72,10 @@ def handle_correct_spotify_link(message):
         with lock:
             if allow_user(message.chat.id):
                 log(bot_name + " log:\nuser " + str(message.chat.id) + " is allowed to use the bot.")
-                bot.delete_message(message.chat.id, temp_message1.message_id)
+                try:
+                    bot.delete_message(message.chat.id, temp_message1.message_id)
+                except:
+                    pass
                 temp_message2 = bot.send_message(message.chat.id, "Start downloading...\nIt can be very fast or very slow, be patient.")
                 clear_files(directory)
                 valid_spotify_links_in_user_text = get_valid_spotify_links(message.text)
@@ -84,9 +87,18 @@ def handle_correct_spotify_link(message):
                 if get_link_type(first_link) == "shortened":
                     log(bot_name + " log:\nshortened link sent from user: " + str(message.chat.id))
                     first_link = get_redirect_link(first_link)
+                    if first_link is None or first_link.strip() == "":
+                        log(bot_name + " log:\nerror in handling short link") # TO-DO: doesn't run, fix later
+                        return
+
                 
                 matches = get_track_ids(first_link)
+                if len(matches) > 1000:
+                    bot.send_message(message.chat.id, "Bot can't download playlists more than 1000 tracks at the moment. This feature will be added later.")
+                    log(bot_name + " log:\nPlaylist more than 1000 tracks from user: " + str(message.chat.id))
+                    return
                 if matches:
+                    at_least_one_track_downloaded = False
                     # download every link:
                     for track_id in matches:
                         time.sleep(0.5) # wait a little to alleviate telegram bot limit
@@ -96,6 +108,7 @@ def handle_correct_spotify_link(message):
                         if existed_row:
                             telegram_audio_id = existed_row[db_tl_audio_column]
                             bot.send_audio(message.chat.id, telegram_audio_id, caption=bot_username)
+                            at_least_one_track_downloaded = True
                         else:
                             download(link)
                             # upload to telegram and delete from hard drive:
@@ -124,18 +137,26 @@ def handle_correct_spotify_link(message):
                                     db_csv_append(db_csv_path, track_id, audio_message.audio.file_id)
                                     # second send to user:
                                     bot.send_audio(message.chat.id, audio_message.audio.file_id, caption=bot_username)
+                                    at_least_one_track_downloaded = True
                                 # remove files from drive
                                 clear_files(directory)
                     # finish message for user
-                    bot.delete_message(message.chat.id, temp_message2.message_id)
-                    bot.send_message(message.chat.id, end_message, parse_mode="Markdown", disable_web_page_preview=True)
+                    try:
+                        bot.delete_message(message.chat.id, temp_message2.message_id)
+                    except:
+                        pass
+                    if at_least_one_track_downloaded:
+                        bot.send_message(message.chat.id, end_message, parse_mode="Markdown", disable_web_page_preview=True)
+                    else:
+                        bot.send_message(message.chat.id, unsuccessful_process_message, parse_mode="Markdown")
                 else:
                     log(bot_name + " log:\nNo matches found. \
                                      this line should not happen in normal behavior\
                                      becuase it is already checked with regex, if happens is a bug.")
+                    bot.send_message(message.chat.id, unsuccessful_process_message, parse_mode="Markdown")
             else:
                 bot.send_message(message.chat.id, "you should wait " + str(user_request_wait) + " seconds between requests")
-                log(bot_name + " log:\nuser " + str(message.chat.id) + " isn't allowed to use the bot⏰")
+                log(bot_name + " log:\n⏰user " + str(message.chat.id) + " isn't allowed to use the bot")
     except Exception as e:
         log(bot_name + " log:\nAn error occurred: " + str(e))
         bot.send_message(message.chat.id, unsuccessful_process_message, parse_mode="Markdown")

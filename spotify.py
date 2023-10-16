@@ -55,13 +55,16 @@ def get_track_ids(link):
             tracks.extend(results['items'])
         track_ids = []
         for t in tracks:
-            if ("track" in t) and (t["track"] is not None) and ("id" in t["track"]) and (t["track"]["id"] is not None):
-                # due to a bug, a small number of tracks in playlists don't have
-                # ["track"]["id"] and cause the program to crash
-                # like 75th track in https://open.spotify.com/playlist/64r1Ry0JIWHboowR4LWp5R
-                # which is https://open.spotify.com/track/46cdw28EXOhDPnD1emDC6T
-                # so we check and make sure this field exists
-                track_ids.append(t["track"]["id"])
+            try:
+                if ("track" in t) and (t["track"] is not None) and ("id" in t["track"]) and (t["track"]["id"] is not None):
+                    # due to a bug, a small number of tracks in playlists don't have
+                    # ["track"]["id"] and cause the program to crash
+                    # like 75th track in https://open.spotify.com/playlist/64r1Ry0JIWHboowR4LWp5R
+                    # which is https://open.spotify.com/track/46cdw28EXOhDPnD1emDC6T
+                    # so we check and make sure this field exists
+                    track_ids.append(t["track"]["id"])
+            except:
+                print("error in getting a track id")
     else:
         return []
 

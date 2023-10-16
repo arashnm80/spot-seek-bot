@@ -19,11 +19,17 @@ Or a playlist link like:
 https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 
 
-NOTE: I might not answer right away but I always answer😉❤️'''
+NOTE: I might not answer right away but I always answer😉❤️
+
+
+©️ Creator: @Arashnm80_Channel'''
 
 # message for /info command
 info_message = '''This bot's whole open source is available in github and all interested programmers are welcome to contribute and improve it:
 https://github.com/arashnm80/spot-seek-bot
+
+Developer's telegram channel:
+@Arashnm80_Channel
 
 You can give me energy with your donation☕️
 possible methods:
@@ -38,16 +44,17 @@ Send the link of your track/album/playlist from spotify'''
 youtube_link_message = '''This bot is created to download from spotify but you sent a youtube link.
 Send the link of your track/album/playlist from spotify'''
 
-# message for user after downloads finished:
-#end_message = '''end.
-#
-#all downloaded songs are also available in our database:
-#[Spot Seek Music Database](https://t.me/+wAztHySpQcdkZjk0)'''
-
 end_message = '''end.
 
-You can support this project by giving stars⭐️ in github:
-https://github.com/arashnm80/spot-seek-bot'''
+Support me in one of following ways🙂❤️:
+• Give a star in [github](https://github.com/arashnm80/spot-seek-bot)⭐
+• Or subscribe to [my youtube](https://www.youtube.com/@Arashnm80)🔥'''
+
+# other_possible_end_message = '''end.
+# Support me in one of following ways🙂❤️:
+# • [Donate](https://Arashnm80.com/donate) a coffee☕
+# • Or give a star in [github](https://github.com/arashnm80/spot-seek-bot)⭐
+# • Or subscribe to [my youtube](https://www.youtube.com/@Arashnm80)🔥'''
 
 wrong_link_message = '''This is not a correct spotify link.
 
@@ -120,4 +127,4 @@ unsuccessful_process_message = '''Sorry, my process wasn't sucessful :(
 
 But you can try another link or use the bot again after some time, it might help.
 
-You can also search for your favorite tracks / artists in my huge [database](https://t.me/+wAztHySpQcdkZjk0)'''
+You can also search for your favorite tracks or artists in my huge [database](https://t.me/+wAztHySpQcdkZjk0)'''

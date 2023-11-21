@@ -1,6 +1,6 @@
 import csv, datetime
-import os
-from variables import db_csv_path, users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, datetime_format, user_request_wait, ucsv_user_id_column, ucsv_last_time_column
+# from variables import users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, datetime_format, user_request_wait, ucsv_user_id_column, ucsv_last_time_column
+from variables import *
 import pandas as pd # for edit_csv function
 
 def csv_read(csv_path):

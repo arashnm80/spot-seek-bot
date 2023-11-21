@@ -12,16 +12,26 @@ https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 all downloaded songs are also available in: [Spot Seek Music Database](https://t.me/+wAztHySpQcdkZjk0)
 
 ## how to deploy as the developer (I'm writing this guide for ubuntu)
-- install python and pip `apt install python3-pip`
+- general pre-install updates in ubuntu:
+```
+$ sudo apt update
+$ sudo apt upgrade
+$ sudo apt-get update
+$ sudo apt-get upgrade
+```
 - clone the repo
 - set required environment variables, tokens and api keys. you can see them in `variables.py` file.
-- download spotdl executable file, rename it to `spotdl` put it beside `spotseek.py` file. you can download linux version from https://github.com/spotDL/spotify-downloader/releases with a command like this:
+- download latest spotdl executable file, rename it to `spotdl` put it beside `spotseek.py` file. you can download linux version from https://github.com/spotDL/spotify-downloader/releases with a command like this:
 ```
-wget -O spotdl https://github.com/spotDL/spotify-downloader/releases/download/v4.1.3/spotdl-4.1.3-linux
+wget -O spotdl https://github.com/spotDL/spotify-downloader/releases/download/v4.2.1/spotdl-4.2.1-linux
 ```
 - then make spotdl executable:
 ```
 chmod +x spotdl
+```
+- install `pip`:
+```
+apt install python3-pip
 ```
 - install necessary python modules `(os, pandas, telebot, re, threading, csv, spotipy, subprocess, requests, datetime, pydub, mutagen, time)` all at once with:
 ```
@@ -62,6 +72,7 @@ Also if you are a programmer you are welcome to contribute and improve the proje
 There is also a similar bot created by my friend [aliilapro](https://github.com/ALIILAPRO): [Spotdlrobot](https://t.me/Spotdlrobot)
 
 ## csv files columns guide
+- Note: starting template of each csv should be headers and **one empty new line** after them
 ### database csv columns
 `date and time added` | `spotify track id` | `telegram audio id`
 ### users csv columns
@@ -70,14 +81,19 @@ There is also a similar bot created by my friend [aliilapro](https://github.com/
 ## TO-DO: bugs to fix & features to add
 - [x] ~fix caption so it will be shown for repetitive tracks~
 - [x] ~some musics metadata is not shown~
-- [ ] only 1 single user can use the bot and it can't multitask
-- [ ] searching in database algorithm isn't fast and efficient
+- [x] ~only 1 single user can use the bot and it can't multitask~
+- [x] ~searching in database algorithm isn't fast and efficient~
 - [x] ~Download playlists with more thatn 100 songs~
 - [ ] find a clean way to give access to database to next bot maintainers
 - [ ] merge database of all spotify downloaders together
 - [x] ~showing message to user when link from other services like deezer is sent.~
 - [ ] support searching name of song by user
 - [ ] find a way to shorten database (audio IDs are very long)
+- [ ] if all track_ids that a user wants already exists bypass normall routine and send all of them to him
+- [ ] implement `fcntl.flock`
+- [ ] handle blocked by user link
+- [ ] manage too threads bug
+- [x] ~regex should handle both http and https~
 
 ## support and donate
 If you find my works useful you can give me energy with coffee☕️:

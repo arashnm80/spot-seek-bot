@@ -7,3 +7,4 @@ spotdl
 .cache
 nohup.out
 spotseek.sh
+test.py

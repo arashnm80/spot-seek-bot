@@ -9,8 +9,6 @@ https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
   - Or a playlist like this:
 https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 
-all downloaded songs are also available in: [Spot Seek Music Database](https://t.me/+wAztHySpQcdkZjk0)
-
 ## how to deploy as the developer (I'm writing this guide for ubuntu)
 - general pre-install updates in ubuntu:
 ```
@@ -54,6 +52,15 @@ nohup python3 spotseek.py > /dev/null 2>&1 &
 or
 ```
 nohup python3 spotseek.py &
+```
+- new method for running `spotseek.py`. old method leaves some dangling processes:
+```
+chmod +x restart_spotseek_py.sh
+```
+we add it to crontab with:
+```
+@reboot /root/Storage/spot-seek-bot/restart_spotseek_py.sh
+0 */6 * * * /root/Storage/spot-seek-bot/restart_spotseek_py.sh
 ```
 - I might haven't cleared datas in `db.csv`, If you are starting the whole infrastructure by yourself remove everything from it except first row which are the headers. you can keep data in db.csv and ask me to give you permission to database to you won't have to redownload all songs.
 

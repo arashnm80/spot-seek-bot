@@ -1,8 +1,9 @@
 import re
-from variables import spotify_shortened_link_pattern, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_client_id, spotify_client_secret, welcome_message
+from variables import spotify_shortened_link_pattern, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_client_id, spotify_client_secret, spotify_apps_list, welcome_message
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import requests # for get_redirect_link
+import random
 
 def get_redirect_link(shortened_link):
     response = requests.head(shortened_link, allow_redirects=True)
@@ -31,6 +32,11 @@ def get_valid_spotify_links(text):
     return all_matches
 
 def get_track_ids(link):
+    # experimental new multiple spotify app system
+    spotify_app = random.choice(spotify_apps_list)
+    spotify_client_id = spotify_app[0]
+    spotify_client_secret = spotify_app[1]
+
     #Authentication - without user
     client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)
     sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
@@ -71,6 +77,11 @@ def get_track_ids(link):
     return(track_ids)
 
 def get_track_image(track_link):
+    # experimental new multiple spotify app system
+    spotify_app = random.choice(spotify_apps_list)
+    spotify_client_id = spotify_app[0]
+    spotify_client_secret = spotify_app[1]
+
     #Authentication - without user
     client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)
     sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)

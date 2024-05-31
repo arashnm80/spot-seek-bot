@@ -86,7 +86,7 @@ def handle_correct_spotify_link(message):
         if get_link_type(first_link) == "shortened":
             log(bot_name + " log:\nshortened link sent from user: " + str(message.chat.id))
             first_link = get_redirect_link(first_link)
-            
+
         link_type = get_link_type(first_link)
         if link_type not in ["track", "album", "playlist"]:
             try_to_delete_message(message.chat.id, guide_message_1.message_id)
@@ -120,13 +120,44 @@ def handle_correct_spotify_link(message):
                 log(bot_name + " log:\nalready sth to download\nuser: " + str(message.chat.id))
                 return
 
+        try:
+            # if files are already in database bypass the queue handler system (can be optimized later. currently there are duplicate codes in handler and here)
+            consecutive_download = 0
+            while matches and (consecutive_download < 200):
+                consecutive_download += 1
+                track_id = matches[0]
+                # instead of old method we use db file based on first letter of track_id + csv extension
+                track_id_first_letter = track_id[0]
+                db_csv_path = db_by_letter_folder_path + "/" + track_id_first_letter + ".csv"
+                # get row of item in database file or return false if doesn't exist
+                existed_row = get_row_list_csv_search(db_csv_path, db_sp_track_column, track_id)
+                if existed_row:
+                    matches.pop(0) # remove the track from list
+                    telegram_audio_id = existed_row[db_tl_audio_column]
+                    bot.send_audio(message.chat.id, telegram_audio_id, caption=bot_username)
+                    time.sleep(0.5)
+                else:
+                    break # reached track that is not in database. break and proceed to queue handler
+            # no tracks left for queue handler
+            if not matches:
+                bot.send_message(message.chat.id, end_message, parse_mode="Markdown", disable_web_page_preview=True)
+                try_to_delete_message(message.chat.id, guide_message_1.message_id)
+                return
+        except Exception as e:
+            log(bot_name + " log:\nAn error in queue bypass: " + str(e) + "\nfor user: " + str(message.chat.id))
+
         # everything is fine. add user tracks to queue
         write_list_to_file(matches, received_links_folder_path + "/" + link_type + "/" + str(message.chat.id))
+        return
+
 
     except Exception as e:
-        try_to_delete_message(message.chat.id, guide_message_1.message_id)
-        bot.send_message(message.chat.id, unsuccessful_process_message, parse_mode="Markdown")
         log(bot_name + " log:\nA general error occurred: " + str(e))
+        try_to_delete_message(message.chat.id, guide_message_1.message_id)
+        try: # I added this try & except block to check if I can solve the unclosed spotseek.py processes
+            bot.send_message(message.chat.id, unsuccessful_process_message, parse_mode="Markdown")
+        except:
+            pass
 
 # any other thing received by bot
 @bot.message_handler(func=lambda message: True)

@@ -2,6 +2,7 @@ import csv, datetime
 # from variables import users_csv_path, db_time_column, db_sp_track_column, db_tl_audio_column, datetime_format, user_request_wait, ucsv_user_id_column, ucsv_last_time_column
 from variables import *
 import pandas as pd # for edit_csv function
+import portalocker # for experimental queue handler bypass - used in db_csv_append
 
 def csv_read(csv_path):
     # Reading from a CSV file
@@ -16,20 +17,32 @@ def db_csv_append(csv_path, spotify_track_id, telegram_audio_id):
     formatted_date = now.strftime(datetime_format)
     # Writing to a CSV file
     with open(csv_path, mode='a', newline='') as file:
-        # Create a CSV writer object
-        writer = csv.writer(file)
-        # Write the new row to the CSV file
-        writer.writerow([formatted_date, spotify_track_id, telegram_audio_id])
+        # Lock the file for experimental queue handler bypass (to prevent collision with get_row_list_csv_search)
+        portalocker.lock(file, portalocker.LOCK_EX)
+        try:
+            # Create a CSV writer object
+            writer = csv.writer(file)
+            # Write the new row to the CSV file
+            writer.writerow([formatted_date, spotify_track_id, telegram_audio_id])
+        finally:
+            # Unlock the file
+            portalocker.unlock(file)
 
 def get_row_list_csv_search(csv_path, column, value):
     value = str(value) # value should be converted to string to prevent variable type bug
-    # Reading from a CSV file
+    # Reading from a CSV file with locking
     with open(csv_path, mode='r') as file:
-        reader = csv.reader(file)
-        for row in reader:
-            if row[column] == value:
-                return row
-        return False
+        # Lock the file for reading (to prevent collision with queue handler bypass csv reader. aka: db_csv_append)
+        portalocker.lock(file, portalocker.LOCK_SH)
+        try:
+            reader = csv.reader(file)
+            for row in reader:
+                if row[column] == value:
+                    return row
+            return False
+        finally:
+            # Unlock the file
+            portalocker.unlock(file)
 
 def get_row_index_csv_search(csv_path, column, value):
     value = str(value) # value should be converted to string to prevent variable type bug

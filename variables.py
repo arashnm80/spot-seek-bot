@@ -50,21 +50,18 @@ Send the link of your track/album/playlist from spotify'''
 spotify_user_link_message = '''You can't send user links.
 Send the link of your track/album/playlist from spotify'''
 
-# end_message = '''end.
-
-# motivate me to buy more servers for faster download by:
-# • Giving a star in [github](https://github.com/arashnm80/spot-seek-bot)⭐🙂
-# • Or subscribing to [my youtube](https://www.youtube.com/@Arashnm80)🔥❤️'''
+# possible sentences for end_message
+# "You can use my *Instagram Downloader* too: @Best\_Instagram\_downloader\_bot"
 
 end_message = '''end.
 
-You can use my *Instagram Downloader* too: @Best\_Instagram\_downloader\_bot
+Give me a star in [Github](https://github.com/arashnm80/spot-seek-bot)⭐😉
 
 Subscribe to [My YouTube](https://www.youtube.com/@Arashnm80) for more🔥'''
 
-sth_to_download_message = '''You already have some link to download, wait for it to finish.
+sth_to_download_message = '''You already have some link to download, wait for me to finish it.
 
-Sometimes more than 100 users are sending links at the same time so it might take a while for me to download all of them.
+Sometimes more than 500 users are sending links at the same time so it might take a while for me to download all of them.
 
 But you can motivate me to buy more servers for faster download by:
 • Giving a star in [github](https://github.com/arashnm80/spot-seek-bot)⭐🙂
@@ -120,9 +117,18 @@ promote_channel_link = "https://t.me/Arashnm80_Channel"
 not_subscribed_to_channel_message = '''Your link is correct✅.
 Join to get access to database, then send your link again.'''
 
-# spotify
-spotify_client_id = os.environ["SPOTIFY_APP_CLIENT_ID"]
-spotify_client_secret = os.environ["SPOTIFY_APP_CLIENT_SECRET"]
+# spotify app - old method with single app - deprecated
+# spotify_client_id = os.environ["SPOTIFY_APP_CLIENT_ID"]
+# spotify_client_secret = os.environ["SPOTIFY_APP_CLIENT_SECRET"]
+
+# spotify app - new gen (multiple apps to bypass limits)
+spotify_apps_list = [
+    ["spotify_client_id_1", "spotify_client_secret_1"],
+    ["spotify_client_id_2", "spotify_client_secret_2"],
+    ["spotify_client_id_3", "spotify_client_secret_3"],
+    # ...
+]
+
 
 # database csv columns
 db_time_column = 0
@@ -141,9 +147,7 @@ user_request_wait = 30
 
 unsuccessful_process_message = '''Sorry, my process wasn't sucessful :(
 
-But you can try another link or use the bot again after some time, it might help.
-
-You can also search for your favorite tracks or artists in my huge [database](https://t.me/+wAztHySpQcdkZjk0)'''
+But you can try another link or use the bot again after some time, it might help.'''
 
 abnormal_behavior_message = " log:\nNo matches found.\
 this line should not happen in normal behavior\

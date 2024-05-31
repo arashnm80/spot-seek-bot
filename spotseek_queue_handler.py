@@ -31,7 +31,7 @@ if __name__ == "__main__":
                     # continue working for the same user a long as
                     # tracks are just being forwarded
                     # limit this to a number like 20 or 50
-                    if track_handling_result != "forwarded" or consecutive_download >= 20:
+                    if track_handling_result != "forwarded" or consecutive_download >= 50:
                         break
                     else:
                         # continue handling for the same user but lower the speed due to this problem:
@@ -59,10 +59,10 @@ if __name__ == "__main__":
     if queue_handler_should_run:
         sleep_time = 2 # run again after a short time
     else:
-        sleep_time = 20 # no tracks left to download, wait more
+        sleep_time = 60 # no tracks left to download, wait more
     
     try:
-        command = f"sleep {sleep_time} && nohup python3 ./spotseek_queue_handler.py &"
+        command = f"sleep {sleep_time} && nohup python3 ./spotseek_queue_handler.py > /dev/null 2>&1 &"
         subprocess.Popen(command, shell=True, close_fds=True)
     except subprocess.CalledProcessError as e:
         log(f"error in re-running queue handler from itself: {e}")

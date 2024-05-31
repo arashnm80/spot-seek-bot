@@ -21,7 +21,7 @@ $ sudo apt-get upgrade
 - set required environment variables, tokens and api keys. you can see them in `variables.py` file.
 - download latest spotdl executable file, rename it to `spotdl` put it beside `spotseek.py` file. you can download linux version from https://github.com/spotDL/spotify-downloader/releases with a command like this:
 ```
-wget -O spotdl https://github.com/spotDL/spotify-downloader/releases/download/v4.2.1/spotdl-4.2.1-linux
+wget -O spotdl https://github.com/spotDL/spotify-downloader/releases/download/v4.2.5/spotdl-4.2.5-linux
 ```
 - then make spotdl executable:
 ```
@@ -55,12 +55,11 @@ nohup python3 spotseek.py &
 ```
 - new method for running `spotseek.py`. old method leaves some dangling processes:
 ```
-chmod +x restart_spotseek_py.sh
+chmod +x restart_spotseek.sh
 ```
-we add it to crontab with:
+we add it to crontab with (currently needs system reboot to be executed in a clean way. as a to-do I can improve it later to be able to restart in the middle of work without reboot):
 ```
-@reboot /root/Storage/spot-seek-bot/restart_spotseek_py.sh
-0 */6 * * * /root/Storage/spot-seek-bot/restart_spotseek_py.sh
+@reboot /root/Storage/spot-seek-bot/restart_spotseek.sh
 ```
 - I might haven't cleared datas in `db.csv`, If you are starting the whole infrastructure by yourself remove everything from it except first row which are the headers. you can keep data in db.csv and ask me to give you permission to database to you won't have to redownload all songs.
 
@@ -97,10 +96,11 @@ There is also a similar bot created by my friend [aliilapro](https://github.com/
 - [ ] support searching name of song by user
 - [ ] find a way to shorten database (audio IDs are very long)
 - [ ] if all track_ids that a user wants already exists bypass normall routine and send all of them to him
-- [ ] implement `fcntl.flock`
+- [x] ~test `portalocker` funcion from `db_csv_append` separately~
 - [ ] handle blocked by user link
 - [ ] manage too threads bug
 - [x] ~regex should handle both http and https~
+- [ ] make `restart_spotseek.sh` work without reboot too
 
 ## support and donate
 If you find my works useful you can give me energy with coffee☕️:

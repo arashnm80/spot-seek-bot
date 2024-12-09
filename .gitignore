@@ -2,6 +2,7 @@
 output/
 __pycache__/
 received_links/
+csv_files/db_by_letter/
 
 # ignored files
 spotdl

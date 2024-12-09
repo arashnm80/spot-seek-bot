@@ -1,6 +1,7 @@
 # ignored folders
 output/
 __pycache__/
+received_links/
 
 # ignored files
 spotdl

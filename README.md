@@ -21,7 +21,7 @@ $ sudo apt-get upgrade
 - set required environment variables, tokens and api keys. you can see them in `variables.py` file.
 - download latest spotdl executable file, rename it to `spotdl` put it beside `spotseek.py` file. you can download linux version from https://github.com/spotDL/spotify-downloader/releases with a command like this:
 ```
-wget -O spotdl https://github.com/spotDL/spotify-downloader/releases/download/v4.2.5/spotdl-4.2.5-linux
+wget -O spotdl https://github.com/spotDL/spotify-downloader/releases/download/v4.2.8/spotdl-4.2.8-linux
 ```
 - then make spotdl executable:
 ```
@@ -84,10 +84,13 @@ There is also a similar bot created by my friend [aliilapro](https://github.com/
 ### users csv columns
 `unique user id` | `last use date and time`
 
-## TO-DO: bugs to fix & features to add
+## TO-DO: ideas & bugs to fix & features to add
 - [x] ~fix caption so it will be shown for repetitive tracks~
 - [x] ~some musics metadata is not shown~
+- [ ] bot should send available tracks to users while new one is being downloaded with spotdl to use best of time.
+- [ ] higher priority for first time users
 - [x] ~only 1 single user can use the bot and it can't multitask~
+- [ ] use a library like telethon for big mp3 files more than 50MB
 - [x] ~searching in database algorithm isn't fast and efficient~
 - [x] ~Download playlists with more thatn 100 songs~
 - [ ] find a clean way to give access to database to next bot maintainers
@@ -95,12 +98,20 @@ There is also a similar bot created by my friend [aliilapro](https://github.com/
 - [x] ~showing message to user when link from other services like deezer is sent.~
 - [ ] support searching name of song by user
 - [ ] find a way to shorten database (audio IDs are very long)
-- [ ] if all track_ids that a user wants already exists bypass normall routine and send all of them to him
+- [x] if all track_ids that a user wants already exists bypass normall routine and send all of them to him
 - [x] ~test `portalocker` funcion from `db_csv_append` separately~
-- [ ] handle blocked by user link
+- [x] handle blocked by user link
 - [ ] manage too threads bug
 - [x] ~regex should handle both http and https~
-- [ ] make `restart_spotseek.sh` work without reboot too
+- [x] make `restart_spotseek.sh` work without reboot too
+- [ ] restarting queue handler doesn't stop previous spotdl download so there might be an excessive mp3 file that might lead to creating wrong track
+- [ ] add gif tutorial for bot in the start
+- [ ] check out `zotify` capabilities
+- [ ] lyrics
+- [ ] send picture and info of link
+- [ ] private playlist answer
+- [ ] more features for premium users
+- [ ] read track data without api key in similar way to https://spotify.detta.dev/
 
 ## support and donate
 If you find my works useful you can give me energy with coffee☕️:

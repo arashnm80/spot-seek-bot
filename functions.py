@@ -4,6 +4,7 @@ from spotify import get_track_image
 import requests
 from log import *
 import telebot
+import shutil
 
 def download(track_link):
     try:
@@ -15,13 +16,14 @@ def download(track_link):
             command = warp_download_command # download with proxychains and warp from port 40000
         else:
             command = normal_download_command # normal download
-        subprocess.run(command, cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        # download in a subprocess with a set timeout
+        subprocess.run(command, cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=300)
         print("end downloading: " + track_link)
 
         # download cover image
         image_url = get_track_image(track_link)
         print("start downloading cover image: " + image_url)
-        subprocess.run(f"wget -O cover.jpg -o /dev/null \"{image_url}\"", shell=True, cwd=directory)
+        subprocess.run(f"wget -O cover.jpg -o /dev/null \"{image_url}\"", shell=True, cwd=directory, timeout=300)
         print("end downloading cover image: " + image_url)
 
     except Exception as e:
@@ -78,3 +80,36 @@ def try_to_delete_message(chat_id, message_id):
         bot.delete_message(chat_id, message_id)
     except:
         pass # ignore errors if user has already deleted the message
+
+# experimental - to see if has effect on spotdl rate limits
+def delete_spotdl_cache():
+    # Path to the directory
+    directory = spotdl_cache_path
+
+    # Check if the directory exists and remove it
+    if os.path.exists(directory):
+        shutil.rmtree(directory)
+        print(f'{directory} has been removed.')
+    else:
+        print(f'{directory} does not exist.')
+
+def setup_spotdl_executable():
+    # Remove the existing spotdl file if it exists
+    if os.path.exists("spotdl"):
+        os.remove("spotdl")
+        print("Old spotdl file removed.")
+    
+    # Define the URL for the latest version of spotdl
+    url = spotdl_executable_link
+    
+    # Download spotdl using wget and name the file 'spotdl'
+    download_command = ["wget", "-O", "spotdl", url]
+    
+    # Run the wget command to download spotdl
+    subprocess.run(download_command, check=True)
+    
+    # Give the downloaded file executable permissions
+    chmod_command = ["chmod", "+x", "spotdl"]
+    
+    # Run the chmod command to make the file executable
+    subprocess.run(chmod_command, check=True)

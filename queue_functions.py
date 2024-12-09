@@ -3,6 +3,8 @@ from my_imports import *
 def list_of_files_in_a_folder(folder_path):
     try:
         file_names = os.listdir(folder_path)
+        # Filter out '.gitkeep'
+        file_names = [name for name in file_names if name != '.gitkeep']
         # Sort the list of file names by creation time
         file_names.sort(key=lambda filename: os.path.getctime(os.path.join(folder_path, filename)))
         return file_names
@@ -30,8 +32,12 @@ def read_list_from_file(file_path):
             lines.append(line)
     return lines
 
-def handle_track_for_user(track_id, user_id):
+# folder_type can be ["track", "album", "playlist"]
+def handle_track_for_user(track_id, user_id, folder_type):
     try:
+        # experimental - to see if has effect on spotdl rate limits - debug
+        delete_spotdl_cache()
+        
         # create bot instance
         bot = telebot.TeleBot(bot_api)
 
@@ -51,12 +57,26 @@ def handle_track_for_user(track_id, user_id):
             bot.send_audio(user_id, telegram_audio_id, caption=bot_username)
             return "forwarded"
 
-        # file doesn't exist in database and should be downloaded
+        # file doesn't exist in database and should be downloaded:
+
+        # experimental - randomly ignore download of some tracks to buy time since there are many users
+        # and bot is kind of flooded
+        # this is temporary debug and should be fixed later (it's not optimized at all)
+        # can change the percentage to high or low numbers between 0 and 1
+        # set this limitation only for playlist folder tracks
+        random_number = round(random.random(), 2) # rounded by 2 digits
+        if (folder_type == "playlist") and (random_number > playlist_download_rate):
+            log(bot_name + " log\nrandom number: " + str(random_number) + " > " + str(playlist_download_rate) + "\nfolder type: " + folder_type + "\nuser: " + user_id + "\ntrack: " + track_id + "\n🤸‍♂️ track skipped")
+            return "skipped"
+        
+        log(bot_name + " log\nrandom number: " + str(random_number) + "\nfolder type: " + folder_type + " \nuser: " + user_id + "\ntrack: " + track_id + "\n🛠 track in process")
+        # download the track
         link = "https://open.spotify.com/track/" + track_id
         download(link)
         # upload to telegram and delete from hard drive:
         # we send every possible file in directory to bypass searching for file name. but we actually know that there is only one file
         for file in file_list(directory):
+            log("there is a downloaded mp3 file")
             change_cover_image(file, "cover.jpg")
             audio = open(directory + file, 'rb')
             # check file size because of telegram 50MB limit
@@ -65,6 +85,7 @@ def handle_track_for_user(track_id, user_id):
             if file_size > 50_000_000:
                 too_large_file_error = "Sorry, size of \"{f}\" is more than 50MB and can't be sent".format(f = file)
                 bot.send_message(user_id, too_large_file_error)
+                log(bot_name + " log:\n🛑 too big mp3 file error")
                 return "largeMp3Error"
 
             # get track metadata to be shown in telegram
@@ -80,8 +101,18 @@ def handle_track_for_user(track_id, user_id):
             bot.send_audio(user_id, audio_message.audio.file_id, caption=bot_username)
             # remove files from drive
             clear_files(directory)
+
             return "downloaded"
         return "noFileSentError"
     except Exception as e:
-        log(bot_name + " log:\nAn error in track_handling_result for user " + user_id + " and track " + track_id + ":\n" + str(e))
-        return "bad error"
+        # check if user has blocked me or deactivated
+        if str(e) == user_blocked_me_error:
+            log(bot_name + "\nuser " + user_id + " blocked me⛔️.")
+            return "userBlockedMe"
+        elif str(e) == deactivated_user_error:
+            log(bot_name + "\nuser " + user_id + " is deactivated☠️.")
+            return "deactivatedUser"
+        
+        # other error
+        log(bot_name + " log:\n🛑 An error in track_handling_result for user " + user_id + " and track " + track_id + ":\n" + str(e))
+        return "otherError"

@@ -5,24 +5,20 @@ bot_name = "Spot Seek Bot"
 bot_username = "@SpotSeekBot"
 
 # message for /start command
-welcome_message = '''Welcome to @SpotSeekBot
-
+welcome_message = '''Hi😃👋
 Send me a link from spotify and I'll download it for you.
 
-It can be a track link like:
+some example links 👇
+
+♪ track (very fast download)
 https://open.spotify.com/track/734dz1YaFITwawPpM25fSt
 
-Or an album link like:
+🎵 album (fast download)
 https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
 
-Or a playlist link like:
+🎶 playlist (normal download)
 https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
-
-
-NOTE: The fewer tracks your link has, the faster it will download.
-
-
-©️ Creator: @Arashnm80_Channel'''
+'''
 
 # message for /info command
 info_message = '''This bot's whole open source is available in my github and all interested programmers are welcome to contribute and improve it.
@@ -30,11 +26,16 @@ info_message = '''This bot's whole open source is available in my github and all
 Developer's telegram channel:
 [https://t.me/Arashnm80_Channel](https://t.me/Arashnm80_Channel)
 
-Note: Albums are downloaded faster than playlists and tracks are downloaded faster than albums.
+Note: albums are downloaded faster than playlists and tracks are downloaded faster than albums.
 
 You can support and motivate me to buy more servers for faster download by:
 • Giving a star in [github](https://github.com/arashnm80/spot-seek-bot)⭐🙂
 • Or subscribing to [my youtube](https://www.youtube.com/@Arashnm80)🔥❤️'''
+
+# message for /privacy command
+privacy_message = '''• This bot doesn't gather any info from the users
+• Artists can send their copyright claims to the developer
+• Bot's open source is available in github for educational purposes'''
 
 # errors and wrong link patterns from user
 deezer_link_message = '''This bot is created to download from spotify but you sent a deezer link.
@@ -56,16 +57,15 @@ Send the link of your track/album/playlist from spotify'''
 end_message = '''end.
 
 Give me a star in [Github](https://github.com/arashnm80/spot-seek-bot)⭐😉
-
 Subscribe to [My YouTube](https://www.youtube.com/@Arashnm80) for more🔥'''
+
+# end_message = '''end.
+
+# rate me 5⭐ in [BotsArchive](https://t.me/BotsArchive/3104)🙂🙏'''
 
 sth_to_download_message = '''You already have some link to download, wait for me to finish it.
 
-Sometimes more than 500 users are sending links at the same time so it might take a while for me to download all of them.
-
-But you can motivate me to buy more servers for faster download by:
-• Giving a star in [github](https://github.com/arashnm80/spot-seek-bot)⭐🙂
-• Or subscribing to [my youtube](https://www.youtube.com/@Arashnm80)🔥❤️'''
+Don't worry, this is not a bug. Sometimes more than 1000 users are sending links at the same time so it might take a while for me to download all of them.'''
 
 wrong_link_message = '''This is not a correct spotify link.
 
@@ -111,24 +111,35 @@ log_channel_id = os.environ['LOG_CHANNEL_ID']
 # specify to use warp or not
 warp_mode = True
 
+# percentage of playlist tracks to be downloaded (1 is all of them and 0 is none)
+playlist_download_rate = 1
+
+# forward multiple tracks if they are already available in database
+# reduces wait time for users. it can be a number like 10, 20, 50, ...
+queue_handler_max_forwards_in_a_row = 10
+
 # promote channel
 promote_channel_username = "@Arashnm80_Channel"
 promote_channel_link = "https://t.me/Arashnm80_Channel"
 not_subscribed_to_channel_message = '''Your link is correct✅.
 Join to get access to database, then send your link again.'''
 
-# spotify app - old method with single app - deprecated
+# # spotify app - old method with single app - deprecated
 # spotify_client_id = os.environ["SPOTIFY_APP_CLIENT_ID"]
 # spotify_client_secret = os.environ["SPOTIFY_APP_CLIENT_SECRET"]
 
 # spotify app - new gen (multiple apps to bypass limits)
 spotify_apps_list = [
-    ["spotify_client_id_1", "spotify_client_secret_1"],
-    ["spotify_client_id_2", "spotify_client_secret_2"],
-    ["spotify_client_id_3", "spotify_client_secret_3"],
-    # ...
+    ["753a138f3d6b4cc5bb9f1790512d74f6", "09214ef8bafd4fc0bfbc13ac432625fe"],
+    ["22a89d555ac247ab89fd719afea0662e", "2d6ca7e55225464e81c799d2c98f5fa3"],
+    ["a55abd0c4f3547c6b5eee881403cb725", "6e22ee618216431f9f1ef2489b0d6b2b"],
+    ["e676ae49eb2142e79e3853f2c140ac80", "043e4b8f3a0b490ea54099c1f52d00a9"],
+    ["383a155022934537a1ce792c267bea9f", "1456e195f4aa479096e071e5844da505"]
 ]
 
+# spotdl
+spotdl_cache_path = "/root/.spotdl"
+spotdl_executable_link = "https://github.com/spotDL/spotify-downloader/releases/download/v4.2.8/spotdl-4.2.8-linux"
 
 # database csv columns
 db_time_column = 0
@@ -155,3 +166,8 @@ becuase it is already checked with regex, if happens is a bug."
 
 more_than_1000_tracks_message = "Bot can't download playlists more than 1000 tracks at the moment.\
 This feature will be added later."
+
+# errors messages
+user_blocked_me_error = "A request to the Telegram API was unsuccessful. Error code: 403. Description: Forbidden: bot was blocked by the user"
+
+deactivated_user_error = "A request to the Telegram API was unsuccessful. Error code: 403. Description: Forbidden: user is deactivated"

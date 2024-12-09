@@ -1,9 +1,10 @@
 import re
-from variables import spotify_shortened_link_pattern, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_client_id, spotify_client_secret, spotify_apps_list, welcome_message
+from variables import spotify_shortened_link_pattern, spotify_track_link_pattern, spotify_album_link_pattern, spotify_playlist_link_pattern, spotify_apps_list, welcome_message
 import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 import requests # for get_redirect_link
 import random
+import os
 
 def get_redirect_link(shortened_link):
     response = requests.head(shortened_link, allow_redirects=True)
@@ -32,6 +33,17 @@ def get_valid_spotify_links(text):
     return all_matches
 
 def get_track_ids(link):
+    # # experimental - set up proxy for spotipy too
+    # # Custom session with SOCKS proxy for spotipy
+    # proxies = {
+    #     'http': 'socks5://localhost:40000',
+    #     'https': 'socks5://localhost:40000'
+    # }
+    # # Create a custom requests session with the proxy
+    # session = requests.Session()
+    # session.proxies.update(proxies)
+
+
     # experimental new multiple spotify app system
     spotify_app = random.choice(spotify_apps_list)
     spotify_client_id = spotify_app[0]
@@ -40,14 +52,19 @@ def get_track_ids(link):
     #Authentication - without user
     client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)
     sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
+    # sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager, requests_session=session) # to use proxy
     
     # get id of link, album or playlist
     link_id = link.split("/")[-1].split("?")[0]
 
     link_type = get_link_type(link)
     if link_type == "track":
-        tracks = sp.track(link_id)
-        track_ids = [tracks["id"]]
+        # # old method - sends link track to spotify api too
+        # tracks = sp.track(link_id)
+        # track_ids = [tracks["id"]]
+        
+        # new method - extracts track id directly from link without api
+        track_ids = [link_id]
     elif link_type == "album":
         tracks = sp.album_tracks(link_id)["items"]
         track_ids = [t["id"] for t in tracks]
@@ -77,6 +94,16 @@ def get_track_ids(link):
     return(track_ids)
 
 def get_track_image(track_link):
+    # # experimental - set up proxy for spotipy too
+    # # Custom session with SOCKS proxy for spotipy
+    # proxies = {
+    #     'http': 'socks5://localhost:40000',
+    #     'https': 'socks5://localhost:40000'
+    # }
+    # # Create a custom requests session with the proxy
+    # session = requests.Session()
+    # session.proxies.update(proxies)
+
     # experimental new multiple spotify app system
     spotify_app = random.choice(spotify_apps_list)
     spotify_client_id = spotify_app[0]
@@ -85,6 +112,7 @@ def get_track_image(track_link):
     #Authentication - without user
     client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)
     sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager)
+    # sp = spotipy.Spotify(client_credentials_manager = client_credentials_manager, requests_session=session)
     
     track_id = track_link.split("/")[-1].split("?")[0]
     track = sp.track(track_id)

@@ -30,7 +30,7 @@ $ sudo apt-get upgrade
 ```
 apt install python3-pip
 ```
-- install necessary python modules:
+- install necessary python modules (or read the requrements modules and install them one by one):
 ```
 pip install -r requirements.txt
 ```
@@ -54,6 +54,7 @@ add this text to crontab (change with the path you've cloned repository):
 ## temp solution to reset every hour to free up memory
 0 * * * * /root/Storage/spot-seek-bot/restart_spotseek.sh
 ```
+- reboot once to affect
 
 ## technical info about how this bot works
 - When you send a spotify link to the bot it searches through its database and if it's the first time it sees this link it will download it with spotdl but if it has done it before it saves time by using previously downloaded files from database.

@@ -3,4 +3,4 @@ spotipy
 pandas
 pydub
 mutagen
-
+portalocker

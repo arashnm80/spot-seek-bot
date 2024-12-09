@@ -124,17 +124,15 @@ promote_channel_link = "https://t.me/Arashnm80_Channel"
 not_subscribed_to_channel_message = '''Your link is correct✅.
 Join to get access to database, then send your link again.'''
 
-# # spotify app - old method with single app - deprecated
-# spotify_client_id = os.environ["SPOTIFY_APP_CLIENT_ID"]
-# spotify_client_secret = os.environ["SPOTIFY_APP_CLIENT_SECRET"]
-
 # spotify app - new gen (multiple apps to bypass limits)
+# template: a list of [spotify_client_id, spotify_client_secret]
+# start with only a single app and add to them as users count grows
 spotify_apps_list = [
-    ["753a138f3d6b4cc5bb9f1790512d74f6", "09214ef8bafd4fc0bfbc13ac432625fe"],
-    ["22a89d555ac247ab89fd719afea0662e", "2d6ca7e55225464e81c799d2c98f5fa3"],
-    ["a55abd0c4f3547c6b5eee881403cb725", "6e22ee618216431f9f1ef2489b0d6b2b"],
-    ["e676ae49eb2142e79e3853f2c140ac80", "043e4b8f3a0b490ea54099c1f52d00a9"],
-    ["383a155022934537a1ce792c267bea9f", "1456e195f4aa479096e071e5844da505"]
+    ["spotify_client_id_1", "spotify_client_secret_1"],
+    ["spotify_client_id_2", "spotify_client_secret_2"],
+    ["spotify_client_id_3", "spotify_client_secret_3"],
+    ["spotify_client_id_4", "spotify_client_secret_4"],
+    ["spotify_client_id_5", "spotify_client_secret_5"]
 ]
 
 # spotdl

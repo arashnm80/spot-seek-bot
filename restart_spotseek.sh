@@ -16,7 +16,13 @@ fi
 
 # Restart the script
 echo "Starting the script..."
-cd /root/Storage/spot-seek-bot/
+
+# get address of current script file (which is repository directory)
+SCRIPT_DIR=$(dirname "$(realpath "$0")")
+
+# Navigate to the script's directory
+cd "$SCRIPT_DIR"
+
 nohup python3 "$SCRIPT_NAME" > /dev/null 2>&1 &
 
 echo "Script restarted successfully."

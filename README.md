@@ -18,20 +18,19 @@ $ sudo apt-get update
 $ sudo apt-get upgrade
 ```
 - clone the repo
-- set required environment variables, tokens and api keys. you can see them in `variables.py` file.
-- download latest spotdl executable file, rename it to `spotdl` put it beside `spotseek.py` file. you can download linux version from https://github.com/spotDL/spotify-downloader/releases with a command like this:
-```
-wget -O spotdl https://github.com/spotDL/spotify-downloader/releases/download/v4.2.8/spotdl-4.2.8-linux
-```
-- then make spotdl executable:
-```
-chmod +x spotdl
-```
+- set required environment variables in a file like `/etc/environment/` (affects on reboot):
+  - `SPOT_SEEK_BOT_API` - main api key of telegram bot
+  - `MUSIC_DATABASE_ID` - private music database channel which bot is its admin
+  - `LOG_CHANNEL_ID` - private log channel which bot is its admin
+- set required variables in `variables.py` file:
+  - `promote_channel_username` - set to a channel that bot promotes and is its admin (begining with `@`)
+  - `warp_mode` - set to `False` if you don't have warp socks proxy
+  - `spotify_apps_list` - a list of spotify app ids and secrets, obtainable from [developer.spotify.com](https://developer.spotify.com/)
 - install `pip`:
 ```
 apt install python3-pip
 ```
-- install necessary python modules `(os, pandas, telebot, re, threading, csv, spotipy, subprocess, requests, datetime, pydub, mutagen, time)` all at once with:
+- install necessary python modules:
 ```
 pip install -r requirements.txt
 ```
@@ -41,27 +40,20 @@ apt install ffmpeg
 ```
 - install `warp` and `proxychians` if you want to use `warp_mode` in `variables.py` (if not, just set it as `False`):
   - `warp`: I got it as a side feature by installing [MHSanaei 3x-ui](https://github.com/MHSanaei/3x-ui). You might be able to install it via [fscarmen warp](https://github.com/fscarmen/warp) too.
-  - `proxychains` (I've written config based on port 40000 in `proxychains.conf` file):
+  - `proxychains` (I've written config based on port 40000 in `proxychains.conf` file): `sudo apt-get install proxychains4`
+- make scripts that run the bot executable:
 ```
-sudo apt-get install proxychains4
+chmod +x restart_spotseek.sh restart_spotseek_queue_handler.sh
 ```
-- run it with spotseek with:
+add this text to crontab (change with the path you've cloned repository):
 ```
-nohup python3 spotseek.py > /dev/null 2>&1 &
-```
-or
-```
-nohup python3 spotseek.py &
-```
-- new method for running `spotseek.py`. old method leaves some dangling processes:
-```
-chmod +x restart_spotseek.sh
-```
-we add it to crontab with (currently needs system reboot to be executed in a clean way. as a to-do I can improve it later to be able to restart in the middle of work without reboot):
-```
+# spotseek
+## run main scripts on reboot
 @reboot /root/Storage/spot-seek-bot/restart_spotseek.sh
+@reboot /root/Storage/spot-seek-bot/restart_spotseek_queue_handler.sh
+## temp solution to reset every hour to free up memory
+0 * * * * /root/Storage/spot-seek-bot/restart_spotseek.sh
 ```
-- I might haven't cleared datas in `db.csv`, If you are starting the whole infrastructure by yourself remove everything from it except first row which are the headers. you can keep data in db.csv and ask me to give you permission to database to you won't have to redownload all songs.
 
 ## technical info about how this bot works
 - When you send a spotify link to the bot it searches through its database and if it's the first time it sees this link it will download it with spotdl but if it has done it before it saves time by using previously downloaded files from database.
@@ -69,13 +61,6 @@ we add it to crontab with (currently needs system reboot to be executed in a cle
 - I've set log channel and database channel for the bot. It stores every downloaded song in database channel and use it as a storage and prints logs from everything to log channel (errors, user messags, ...)
 - We use spotify api to get tracks from a valid link so you should sign up in https://developer.spotify.com/ and get your own token.
 - All mp3 files are downloaded with high 320k quality.
-
-## status
-I've created This bot to download musics by their link from spotify (single track, album or playlist)..
-
-Also if you are a programmer you are welcome to contribute and improve the project or use it for yourself.
-
-There is also a similar bot created by my friend [aliilapro](https://github.com/ALIILAPRO): [Spotdlrobot](https://t.me/Spotdlrobot)
 
 ## csv files columns guide
 - Note: starting template of each csv should be headers and **one empty new line** after them
@@ -113,7 +98,13 @@ There is also a similar bot created by my friend [aliilapro](https://github.com/
 - [ ] more features for premium users
 - [ ] read track data without api key in similar way to https://spotify.detta.dev/
 
+## disclaimer
+This project is for personal learning, do not use it for illegal purposes. Artists can send their copyright claims to the developer.
+
 ## support and donate
-If you find my works useful you can give me energy with coffee☕️:
-- https://www.coffeete.ir/arashnm80 (﷼)
-- https://www.buymeacoffee.com/Arashnm80 (dollar)
+### Give me energy with coffee:
+- [BuyMeACoffee](https://www.buymeacoffee.com/Arashnm80) (🇺🇸 $)
+- [Coffeete](https://www.coffeete.ir/Arashnm80) (🇮🇷 ريال)
+### Continuous monthly support:
+- [Patreon](https://www.patreon.com/Arashnm80) (🇺🇸 $)
+- [HamiBash](https://hamibash.com/Arashnm80) (🇮🇷 ريال)

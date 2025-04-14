@@ -1,4 +1,5 @@
 from my_imports import *
+from csv_functions import *
 
 def list_of_files_in_a_folder(folder_path):
     try:
@@ -44,16 +45,12 @@ def handle_track_for_user(track_id, user_id, folder_type):
         # remove junk files from drive
         clear_files(directory)
 
-        # instead of old method we use db file based on first letter of track_id + csv extension
-        track_id_first_letter = track_id[0]
-        db_csv_path = db_by_letter_folder_path + "/" + track_id_first_letter + ".csv"
+        # new method based on sqlite3 db
+        telegram_audio_id = get_telegram_audio_id(track_id)
 
-        # get row of item in database file or return false if doesn't exist
-        existed_row = get_row_list_csv_search(db_csv_path, db_sp_track_column, track_id)
-
-        # if item exists in 
-        if existed_row:
-            telegram_audio_id = existed_row[db_tl_audio_column]
+        # if item exists in db
+        if telegram_audio_id is not None:
+            # telegram_audio_id = existed_row[db_tl_audio_column]
             bot.send_audio(user_id, telegram_audio_id, caption=bot_username)
             return "forwarded"
 
@@ -95,8 +92,11 @@ def handle_track_for_user(track_id, user_id, folder_type):
             thumb_image = open(directory + "cover_low.jpg", 'rb')
             # first send to database_channel:
             audio_message = bot.send_audio(database_channel, audio, thumb=thumb_image, caption=bot_username, duration=track_duration, performer=track_artist, title=track_title)
+
             # add file to database
-            db_csv_append(db_csv_path, track_id, audio_message.audio.file_id)
+            # new method based on sqlite3 db
+            add_or_update_track_info(track_id, audio_message.audio.file_id)
+
             # second send to user:
             bot.send_audio(user_id, audio_message.audio.file_id, caption=bot_username)
             # remove files from drive
@@ -115,4 +115,4 @@ def handle_track_for_user(track_id, user_id, folder_type):
         
         # other error
         log(bot_name + " log:\n🛑 An error in track_handling_result for user " + user_id + " and track " + track_id + ":\n" + str(e))
-        return "otherError"
+        return "otherUncheckedError"

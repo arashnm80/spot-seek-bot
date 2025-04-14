@@ -4,6 +4,7 @@ __pycache__/
 received_links/
 
 # ignored files
+music.db
 spotdl
 .cache
 nohup.out

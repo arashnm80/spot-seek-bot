@@ -13,3 +13,4 @@ def log(log_message):
         print('log registered')
     else:
         print('Error in registering log:', log.status_code)
+        print('Error in registering log:', log.text)

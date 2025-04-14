@@ -11,9 +11,9 @@ def download(track_link):
         # download track
         print("start downloading: " + track_link)
         normal_download_command = ['../spotdl', "--bitrate", "320k", track_link] # nomal download
-        warp_download_command = ['proxychains', '-f', '../proxychains.conf', '../spotdl', "--bitrate", "320k", track_link] # download with warp
+        warp_download_command = ['proxychains4', '-f', '/etc/proxychains4.conf', '../spotdl', "--bitrate", "320k", track_link] # download with warp
         if warp_mode:
-            command = warp_download_command # download with proxychains and warp from port 40000
+            command = warp_download_command # download with proxychains and warp
         else:
             command = normal_download_command # normal download
         # download in a subprocess with a set timeout

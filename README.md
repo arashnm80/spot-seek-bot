@@ -71,6 +71,8 @@ add this text to crontab (change with the path you've cloned repository):
 `unique user id` | `last use date and time`
 
 ## TO-DO: ideas & bugs to fix & features to add
+- [ ] support searching name of song by user
+- [ ] support inline mode
 - [x] ~fix caption so it will be shown for repetitive tracks~
 - [x] ~some musics metadata is not shown~
 - [ ] bot should send available tracks to users while new one is being downloaded with spotdl to use best of time.
@@ -82,7 +84,6 @@ add this text to crontab (change with the path you've cloned repository):
 - [ ] find a clean way to give access to database to next bot maintainers
 - [ ] merge database of all spotify downloaders together
 - [x] ~showing message to user when link from other services like deezer is sent.~
-- [ ] support searching name of song by user
 - [ ] find a way to shorten database (audio IDs are very long)
 - [x] if all track_ids that a user wants already exists bypass normall routine and send all of them to him
 - [x] ~test `portalocker` funcion from `db_csv_append` separately~

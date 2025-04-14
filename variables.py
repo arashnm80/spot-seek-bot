@@ -1,4 +1,6 @@
 import os
+import requests
+import json
 
 # bot name
 bot_name = "Spot Seek Bot"
@@ -82,9 +84,6 @@ https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs'''
 directory = "./output/"
 
 # paths
-# db_csv_path = "./csv_files/db.csv" # old method
-db_by_letter_folder_path = "./csv_files/db_by_letter"
-users_csv_path = "./csv_files/users.csv"
 received_links_folder_path = "./received_links"
 
 # env variables
@@ -111,6 +110,12 @@ log_channel_id = os.environ['LOG_CHANNEL_ID']
 # specify to use warp or not
 warp_mode = True
 
+# warp socks proxy
+warp_proxies = os.environ["WARP_PROXIES"]
+warp_proxies = json.loads(warp_proxies)
+warp_session = requests.Session()
+warp_session.proxies.update(warp_proxies)
+
 # percentage of playlist tracks to be downloaded (1 is all of them and 0 is none)
 playlist_download_rate = 1
 
@@ -120,24 +125,19 @@ queue_handler_max_forwards_in_a_row = 10
 
 # promote channel
 promote_channel_username = "@Arashnm80_Channel"
-promote_channel_link = "https://t.me/Arashnm80_Channel"
+promote_channel_link = f"https://t.me/{promote_channel_username.lstrip('@')}"
 not_subscribed_to_channel_message = '''Your link is correct✅.
 Join to get access to database, then send your link again.'''
 
 # spotify app - new gen (multiple apps to bypass limits)
 # template: a list of [spotify_client_id, spotify_client_secret]
 # start with only a single app and add to them as users count grows
-spotify_apps_list = [
-    ["spotify_client_id_1", "spotify_client_secret_1"],
-    ["spotify_client_id_2", "spotify_client_secret_2"],
-    ["spotify_client_id_3", "spotify_client_secret_3"],
-    ["spotify_client_id_4", "spotify_client_secret_4"],
-    ["spotify_client_id_5", "spotify_client_secret_5"]
-]
+spotify_apps_list = os.environ["SPOTIFY_APPS_LIST"]
+spotify_apps_list = json.loads(spotify_apps_list)
 
 # spotdl
 spotdl_cache_path = "/root/.spotdl"
-spotdl_executable_link = "https://github.com/spotDL/spotify-downloader/releases/download/v4.2.8/spotdl-4.2.8-linux"
+spotdl_executable_link = "https://github.com/spotDL/spotify-downloader/releases/download/v4.2.10/spotdl-4.2.10-linux"
 
 # database csv columns
 db_time_column = 0

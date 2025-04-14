@@ -18,6 +18,14 @@ if __name__ == "__main__":
                 file_path = folder_path + "/" + user_id
                 tracks = read_list_from_file(file_path)
 
+                # todo
+                # this edge rare case should not happen at all. find its origin later
+                # if file is empty, delete it and move on to next user
+                if not tracks:
+                    os.remove(file_path)
+                    log(bot_name + " log:\n🗑 deleting user " + user_id + " tracks cause their received links file is empty. (by the way this should not happen and should be handled properly later)")
+                    continue
+
                 consecutive_download = 0
                 # as long as items are left in tracks list
                 while tracks:

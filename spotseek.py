@@ -2,6 +2,7 @@
 
 from queue_functions import *
 from my_imports import *
+from csv_functions import *
 
 # initialize and get ready
 bot = telebot.TeleBot(bot_api)
@@ -99,6 +100,13 @@ def handle_correct_spotify_link(message):
             log(bot_name + " log:\n🛑 error in handling short link.")
             return
         
+        # # fixme
+        # if link_type == "playlist" or link_type == "album":
+        #     try_to_delete_message(message.chat.id, guide_message_1.message_id)
+        #     bot.send_message(message.chat.id, "Sorry 😢\n\nAlbums & Playlists are temporarily disabled due to spotify policies. Please send a track link.")
+        #     log(bot_name + " log:\n🛑 figue out a solution for spotify playlist limit")
+        #     return
+        
         matches = get_track_ids(first_link)
         
         # more than 1000 tracks
@@ -131,18 +139,15 @@ def handle_correct_spotify_link(message):
             while matches and (consecutive_download < 200):
                 consecutive_download += 1
                 track_id = matches[0]
-                # instead of old method we use db file based on first letter of track_id + csv extension
-                track_id_first_letter = track_id[0]
-                db_csv_path = db_by_letter_folder_path + "/" + track_id_first_letter + ".csv"
-                # get row of item in database file or return false if doesn't exist
-                existed_row = get_row_list_csv_search(db_csv_path, db_sp_track_column, track_id)
-                if existed_row:
+                # new method based on sqlite3 db
+                telegram_audio_id = get_telegram_audio_id(track_id)
+                if telegram_audio_id is not None:
                     matches.pop(0) # remove the track from list
-                    telegram_audio_id = existed_row[db_tl_audio_column]
                     bot.send_audio(message.chat.id, telegram_audio_id, caption=bot_username)
                     time.sleep(1)
                 else:
                     break # reached track that is not in database. break and proceed to queue handler
+
             # no tracks left for queue handler
             if not matches:
                 bot.send_message(message.chat.id, end_message, parse_mode="Markdown", disable_web_page_preview=True)

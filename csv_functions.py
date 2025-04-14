@@ -1,8 +1,5 @@
-import csv, datetime
 from variables import *
 from my_imports import *
-import pandas as pd # for edit_csv function
-import portalocker # for experimental queue handler bypass - used in db_csv_append
 import sqlite3 # to use sqlite3 database
 
 ##############################################################

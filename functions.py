@@ -16,7 +16,7 @@ def download(track_link):
             command = warp_download_command # download with proxychains and warp
         else:
             command = normal_download_command # normal download
-        # download in a subprocess with a set timeout
+        # download in a subprocess with a set timeout (does it in ouput folder)
         subprocess.run(command, cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=300)
         print("end downloading: " + track_link)
 

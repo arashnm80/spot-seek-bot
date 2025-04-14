@@ -137,7 +137,7 @@ spotify_apps_list = json.loads(spotify_apps_list)
 
 # spotdl
 spotdl_cache_path = "/root/.spotdl"
-spotdl_executable_link = "https://github.com/spotDL/spotify-downloader/releases/download/v4.2.10/spotdl-4.2.10-linux"
+spotdl_executable_link = "https://github.com/spotDL/spotify-downloader/releases/download/v4.2.11/spotdl-4.2.11-linux"
 
 # database csv columns
 db_time_column = 0

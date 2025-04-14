@@ -1,6 +1,9 @@
 telebot
-spotipy
 pandas
 pydub
 mutagen
 portalocker
+spotipy
+spotipy-anon
+requests
+requests[socks]

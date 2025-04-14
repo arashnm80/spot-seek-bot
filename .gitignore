@@ -2,6 +2,7 @@
 output/
 __pycache__/
 received_links/
+venv/
 
 # ignored files
 music.db

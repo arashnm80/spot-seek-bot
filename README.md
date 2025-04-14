@@ -18,6 +18,10 @@ $ sudo apt-get update
 $ sudo apt-get upgrade
 ```
 - clone the repo
+- `proxychains4`:
+  - `warp`: I got it as a side feature by installing [MHSanaei 3x-ui](https://github.com/MHSanaei/3x-ui). You might be able to install it via [fscarmen warp](https://github.com/fscarmen/warp) too.
+  - install it via `sudo apt-get install proxychains4`
+  - set warp proxy in `/etc/proxychains4.conf`
 - set required environment variables in a file like `/etc/environment/` (affects on reboot):
   - `SPOT_SEEK_BOT_API` - main api key of telegram bot
   - `MUSIC_DATABASE_ID` - private music database channel which bot is its admin
@@ -34,13 +38,9 @@ apt install python3-pip
 ```
 pip install -r requirements.txt
 ```
-- install `ffmpeg` with:
-```
-apt install ffmpeg
-```
-- install `warp` and `proxychians` if you want to use `warp_mode` in `variables.py` (if not, just set it as `False`):
-  - `warp`: I got it as a side feature by installing [MHSanaei 3x-ui](https://github.com/MHSanaei/3x-ui). You might be able to install it via [fscarmen warp](https://github.com/fscarmen/warp) too.
-  - `proxychains` (I've written config based on port 40000 in `proxychains.conf` file): `sudo apt-get install proxychains4`
+- `ffmpeg`:
+  - install it via `apt install ffmpeg`
+  - if didn't work correctly you can check another more complicated installation here: https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu
 - make scripts that run the bot executable:
 ```
 chmod +x restart_spotseek.sh restart_spotseek_queue_handler.sh
@@ -73,6 +73,7 @@ add this text to crontab (change with the path you've cloned repository):
 ## TO-DO: ideas & bugs to fix & features to add
 - [ ] support searching name of song by user
 - [ ] support inline mode
+- [ ] option to enable or disable warp mode for everything (spotipy, spotdl, ...)
 - [x] ~fix caption so it will be shown for repetitive tracks~
 - [x] ~some musics metadata is not shown~
 - [ ] bot should send available tracks to users while new one is being downloaded with spotdl to use best of time.

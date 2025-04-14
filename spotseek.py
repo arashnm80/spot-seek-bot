@@ -4,6 +4,8 @@ from queue_functions import *
 from my_imports import *
 from csv_functions import *
 
+import traceback
+
 # initialize and get ready
 bot = telebot.TeleBot(bot_api)
 
@@ -57,7 +59,7 @@ def spotify_user_link_handler(message):
 
 # correct pattern
 @bot.message_handler(regexp = spotify_correct_link_pattern)
-def handle_correct_spotify_link(message):
+def handle_correct_spotify_link(message):       
     guide_message_1 = bot.send_message(message.chat.id, "Ok🙂👍\nPlease be patient and wait till I download all of your link.\n\nYou will get a message in the end.")
     log(bot_name + " log:\n🔗✅ correct link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
     try:
@@ -163,6 +165,7 @@ def handle_correct_spotify_link(message):
 
     except Exception as e:
         log(bot_name + " log:\n🛑 A general error occurred: " + str(e))
+        print(traceback.format_exc())
         try_to_delete_message(message.chat.id, guide_message_1.message_id)
         try: # I added this try & except block to check if I can solve the unclosed spotseek.py processes
             bot.send_message(message.chat.id, unsuccessful_process_message, parse_mode="Markdown")

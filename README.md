@@ -42,6 +42,8 @@ pip install -r requirements.txt
   - install it via `apt install ffmpeg`
   - if didn't work correctly you can check another more complicated installation here: https://trac.ffmpeg.org/wiki/CompilationGuide/Ubuntu
 - make scripts that run the bot executable:
+- `music.db`:
+  - create it from scratch via `create_database()` or use the saved one from before
 ```
 chmod +x restart_spotseek.sh restart_spotseek_queue_handler.sh
 ```

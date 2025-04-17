@@ -5,6 +5,7 @@ import requests # for get_redirect_link
 import random
 from spotipy_anon import SpotifyAnon
 from variables import *
+from csv_functions import get_telegram_audio_id
 
 def get_redirect_link(shortened_link):
     response = requests.head(shortened_link, allow_redirects=True)
@@ -37,10 +38,8 @@ def get_track_ids(link):
     spotify_app = random.choice(spotify_apps_list)
     spotify_client_id = spotify_app[0]
     spotify_client_secret = spotify_app[1]
-
     #Authentication - without user
     client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)
-    
     # spotipy instance with warp_session and spotifyAnon - remove auth_manager to use without SpotifyAnon
     sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager, requests_session=warp_session, auth_manager=SpotifyAnon())
     
@@ -95,3 +94,38 @@ def get_track_image(track_link):
     
     return cover_image_url
 
+# search for a track name in spotify and return their track ids
+def search_track_ids(query):
+# experimental new multiple spotify app system
+    spotify_app = random.choice(spotify_apps_list)
+    spotify_client_id = spotify_app[0]
+    spotify_client_secret = spotify_app[1]
+    #Authentication - without user
+    client_credentials_manager = SpotifyClientCredentials(client_id=spotify_client_id, client_secret=spotify_client_secret)
+    # spotipy instance with warp_session and spotifyAnon - remove auth_manager to use without SpotifyAnon
+    sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager, requests_session=warp_session, auth_manager=SpotifyAnon())
+    
+    # Perform a search for tracks using the provided query
+    results = sp.search(q=query, type='track', limit=5)
+    
+    # Extract and return the relevant track information
+    tracks = []
+    for track in results['tracks']['items']:
+        track_info = {
+            'id': track['id'],
+            'name': track['name'],
+            'artist': track['artists'][0]['name'],
+            'uri': track['uri'],
+            'url': track['external_urls']['spotify'],
+            'album': track['album']['name']
+        }
+        tracks.append(track_info)
+
+    available_track_ids = []
+    for track in tracks:
+        telegram_audio_id = get_telegram_audio_id(track['id'])
+        if telegram_audio_id is not None:
+            track['telegram_audio_id'] = telegram_audio_id
+            available_track_ids.append(track)
+    
+    return available_track_ids

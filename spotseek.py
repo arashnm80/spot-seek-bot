@@ -3,8 +3,13 @@
 from queue_functions import *
 from my_imports import *
 from csv_functions import *
+from telebot.types import InlineQueryResultCachedAudio
 
 import traceback
+
+# todo: isn't best practice and can be optimized later.
+# to keep track of last query and deboune fast changes while user is still typing
+last_queries = {}
 
 # initialize and get ready
 bot = telebot.TeleBot(bot_api)
@@ -56,6 +61,34 @@ def spotify_user_link_handler(message):
     bot.send_message(message.chat.id, spotify_user_link_message, parse_mode="Markdown", disable_web_page_preview=True)
     log(bot_name + " log:\n🔗❌ user link sent from user: " + str(message.chat.id))
 
+@bot.inline_handler(lambda query: True)
+def query_text(inline_query):
+    # check that query is not empty
+    if not inline_query.query:
+        return
+    
+    # Store the current query
+    last_queries[inline_query.from_user.id] = inline_query.query
+    # Wait briefly to see if the user keeps typing
+    time.sleep(0.6)
+    # If user typed something new during the wait, skip this request
+    if last_queries.get(inline_query.from_user.id) != inline_query.query:
+        return
+
+    # search and find tracks from spotify. then check our local db
+    tracks = search_track_ids(inline_query.query)
+
+    results = [
+        InlineQueryResultCachedAudio(
+            id=track["id"],
+            audio_file_id=track['telegram_audio_id'],
+            caption="@SpotSeekBot"
+        )
+        for track in tracks
+    ]
+    
+    # Send the results back to Telegram
+    bot.answer_inline_query(inline_query.id, results)
 
 # correct pattern
 @bot.message_handler(regexp = spotify_correct_link_pattern)

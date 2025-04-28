@@ -38,9 +38,6 @@ def handle_track_for_user(track_id, user_id, folder_type):
     try:
         # experimental - to see if has effect on spotdl rate limits - debug
         delete_spotdl_cache()
-        
-        # create bot instance
-        bot = telebot.TeleBot(bot_api)
 
         # remove junk files from drive
         clear_files(directory)

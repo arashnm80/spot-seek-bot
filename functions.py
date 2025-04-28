@@ -73,9 +73,6 @@ def check_membership(channel, user):
         return False
 
 def try_to_delete_message(chat_id, message_id):
-    # initialize bot
-    bot = telebot.TeleBot(bot_api)
-
     try:
         bot.delete_message(chat_id, message_id)
     except:

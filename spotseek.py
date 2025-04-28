@@ -11,8 +11,8 @@ import traceback
 # to keep track of last query and deboune fast changes while user is still typing
 last_queries = {}
 
-# initialize and get ready
-bot = telebot.TeleBot(bot_api)
+# # initialize and get ready
+# bot = telebot.TeleBot(bot_api)
 
 # defined commands
 @bot.message_handler(commands = ['start'])
@@ -82,7 +82,7 @@ def query_text(inline_query):
         InlineQueryResultCachedAudio(
             id=track["id"],
             audio_file_id=track['telegram_audio_id'],
-            caption="@SpotSeekBot"
+            # caption="@SpotSeekBot"
         )
         for track in tracks
     ]
@@ -92,7 +92,7 @@ def query_text(inline_query):
 
 # correct pattern
 @bot.message_handler(regexp = spotify_correct_link_pattern)
-def handle_correct_spotify_link(message):       
+def handle_correct_spotify_link(message):
     guide_message_1 = bot.send_message(message.chat.id, "Ok🙂👍\nPlease be patient and wait till I download all of your link.\n\nYou will get a message in the end.")
     log(bot_name + " log:\n🔗✅ correct link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
     try:
@@ -141,7 +141,7 @@ def handle_correct_spotify_link(message):
         #     bot.send_message(message.chat.id, "Sorry 😢\n\nAlbums & Playlists are temporarily disabled due to spotify policies. Please send a track link.")
         #     log(bot_name + " log:\n🛑 figue out a solution for spotify playlist limit")
         #     return
-        
+
         matches = get_track_ids(first_link)
         
         # more than 1000 tracks

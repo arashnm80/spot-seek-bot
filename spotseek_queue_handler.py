@@ -7,9 +7,6 @@ if __name__ == "__main__":
         # emperimental - remove old spotdl exe and download it again to see if affects limits
         setup_spotdl_executable()
 
-        # initialize bot
-        bot = telebot.TeleBot(bot_api)
-
         for folder in ["track", "album", "playlist"]:
             folder_path = received_links_folder_path + "/" + folder
             files = list_of_files_in_a_folder(folder_path)

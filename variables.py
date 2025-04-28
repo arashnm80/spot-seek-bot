@@ -2,6 +2,15 @@ import os
 import requests
 import json
 
+import telebot
+
+# env variables
+bot_api = os.environ["SPOT_SEEK_BOT_API"]
+database_channel = os.environ["MUSIC_DATABASE_ID"]
+
+# initialize bot
+bot = telebot.TeleBot(bot_api)
+
 # bot name
 bot_name = "Spot Seek Bot"
 bot_username = "@SpotSeekBot"
@@ -86,10 +95,6 @@ directory = "./output/"
 # paths
 received_links_folder_path = "./received_links"
 
-# env variables
-bot_api = os.environ["SPOT_SEEK_BOT_API"]
-database_channel = os.environ["MUSIC_DATABASE_ID"]
-
 # spotify regex patterns
 spotify_shortened_link_pattern = r'https?:\/\/spotify\.link\/[A-Za-z0-9]+'
 spotify_track_link_pattern = r'https?:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?track\/[a-zA-Z0-9]+'
@@ -117,7 +122,7 @@ warp_session = requests.Session()
 warp_session.proxies.update(warp_proxies)
 
 # percentage of playlist tracks to be downloaded (1 is all of them and 0 is none)
-playlist_download_rate = 1
+playlist_download_rate = 0.5
 
 # forward multiple tracks if they are already available in database
 # reduces wait time for users. it can be a number like 10, 20, 50, ...

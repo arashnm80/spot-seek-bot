@@ -3,6 +3,7 @@ output/
 __pycache__/
 received_links/
 venv/
+.vscode/
 
 # ignored files
 music.db

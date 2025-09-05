@@ -1,58 +1,33 @@
 import subprocess
 from variables import *
-from spotify import get_track_image
 import requests
 from log import *
-import telebot
 import shutil
 
-def download(track_link):
-    try:
-        # download track
-        print("start downloading: " + track_link)
-        normal_download_command = ['../spotdl', "--bitrate", "320k", track_link] # nomal download
-        warp_download_command = ['proxychains4', '-f', '/etc/proxychains4.conf', '../spotdl', "--bitrate", "320k", track_link] # download with warp
-        if warp_mode:
-            command = warp_download_command # download with proxychains and warp
-        else:
-            command = normal_download_command # normal download
-        # download in a subprocess with a set timeout (does it in ouput folder)
-        subprocess.run(command, cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=300)
-        print("end downloading: " + track_link)
-
-        # download cover image
-        image_url = get_track_image(track_link)
-        print("start downloading cover image: " + image_url)
-        subprocess.run(f"wget -O cover.jpg -o /dev/null \"{image_url}\"", shell=True, cwd=directory, timeout=300)
-        print("end downloading cover image: " + image_url)
-
-    except Exception as e:
-        # more info: apparently they give "SongError: Track no longer exists"
-        # I can handle them more properly later without passing them to this function in the first place
-        # e.g. by using spotify api
-        log(bot_name + " error in download function (not critical and important). track: " + track_link)
-        return
-
-def file_list(directory):
-    file_list = []
-    for file in os.listdir(directory):
-        if file.endswith(".mp3"):
-            file_list.append(file)
-    return file_list
+def get_single_mp3(directory):
+    mp3_files = [f for f in os.listdir(directory) if f.endswith('.mp3')]
+    if len(mp3_files) == 1:
+        return mp3_files[0]
+    elif len(mp3_files) == 0:
+        raise FileNotFoundError("no .mp3 file was found.")
+    else:
+        raise RuntimeError("more than one .mp3 file was found.")
 
 def clear_files(folder_path):
-    directory = folder_path
-    # note: there is a .gitkeep file in output folder
+    for name in os.listdir(folder_path):
+        if name == ".gitkeep":
+            continue  # ne pas toucher à .gitkeep
 
-    for filename in os.listdir(directory):
-        if filename != ".gitkeep":
-            file_path = os.path.join(directory, filename)
-            try:
-                if os.path.isfile(file_path):
-                    os.remove(file_path)
-                    print(f"Deleted {filename}")
-            except Exception as e:
-                print(f"Error deleting {filename}: {e}")
+        path = os.path.join(folder_path, name)
+        try:
+            if os.path.isfile(path) or os.path.islink(path):
+                os.remove(path)
+                print(f"Deleted file: {name}")
+            elif os.path.isdir(path):
+                shutil.rmtree(path)
+                print(f"Deleted folder: {name}")
+        except Exception as e:
+            print(f"Error deleting {name}: {e}")
 
 def check_membership(channel, user):
     # Send a request to the Telegram Bot API
@@ -82,6 +57,17 @@ def try_to_delete_message(chat_id, message_id):
 def delete_spotdl_cache():
     # Path to the directory
     directory = spotdl_cache_path
+
+    # Check if the directory exists and remove it
+    if os.path.exists(directory):
+        shutil.rmtree(directory)
+        print(f'{directory} has been removed.')
+    else:
+        print(f'{directory} does not exist.')
+
+def delete_yt_dlp_cache():
+    # Path to the directory
+    directory = yt_dlp_cache_path
 
     # Check if the directory exists and remove it
     if os.path.exists(directory):

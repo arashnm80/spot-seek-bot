@@ -3,6 +3,9 @@ import os, requests
 from variables import log_bot_url, log_channel_id
 
 def log(log_message):
+    # FIXME - temporary for lower bot load of requests
+    return
+
     log = requests.post(log_bot_url + "sendMessage", data={
         "chat_id": log_channel_id,
         "text": log_message

@@ -1,5 +1,4 @@
 from variables import *
-from my_imports import *
 import sqlite3 # to use sqlite3 database
 
 ##############################################################
@@ -38,5 +37,17 @@ def add_or_update_track_info(spotify_track_id, telegram_audio_id, db_name="music
         INSERT OR REPLACE INTO track_info (spotify_track_id, telegram_audio_id)
         VALUES (?, ?)
     ''', (spotify_track_id, telegram_audio_id))
+    conn.commit()
+    conn.close()
+
+def delete_track(spotify_track_id, db_name="music.db"):
+    """
+    Delete an entry from the track_info table by its spotify_track_id if it exists.
+    """
+    conn = sqlite3.connect(db_name)
+    c = conn.cursor()
+    c.execute('''
+        DELETE FROM track_info WHERE spotify_track_id = ?
+    ''', (spotify_track_id,))
     conn.commit()
     conn.close()

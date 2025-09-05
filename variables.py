@@ -3,13 +3,15 @@ import requests
 import json
 
 import telebot
+from telebot.async_telebot import AsyncTeleBot
 
 # env variables
 bot_api = os.environ["SPOT_SEEK_BOT_API"]
 database_channel = os.environ["MUSIC_DATABASE_ID"]
 
 # initialize bot
-bot = telebot.TeleBot(bot_api)
+bot = telebot.TeleBot(bot_api) # sync
+async_bot = AsyncTeleBot(bot_api) # async
 
 # bot name
 bot_name = "Spot Seek Bot"
@@ -17,18 +19,24 @@ bot_username = "@SpotSeekBot"
 
 # message for /start command
 welcome_message = '''Hi😃👋
-Send me a link from spotify and I'll download it for you.
 
-some example links 👇
+You can search for a song name by typing its name. for example try this:
+`Adele - Someone Like You`
 
-♪ track (very fast download)
+
+Or you can send me a spotify link like these👇
+♪ track
 https://open.spotify.com/track/734dz1YaFITwawPpM25fSt
-
-🎵 album (fast download)
+🎵 album
 https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
+🎶 playlist
+https://open.spotify.com/playlist/3ceLS7hutXrwz03g0c11gW
 
-🎶 playlist (normal download)
-https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
+
+You can also search for songs in other chats, groups or channels by using the inline mode of the bot. for example type this in some other chat:
+`@SpotSeekBot Adele - Someone Like You`
+
+(In inline mode you write bot's username and type a song name after a space)
 '''
 
 # message for /info command
@@ -49,12 +57,16 @@ privacy_message = '''• This bot doesn't gather any info from the users
 • Bot's open source is available in github for educational purposes'''
 
 # errors and wrong link patterns from user
-deezer_link_message = '''This bot is created to download from spotify but you sent a deezer link.
+deezer_link_message = '''This bot is for downloading from spotify but you sent a deezer link.
 Send the link of your track/album/playlist from spotify'''
-soundcloud_link_message = '''This bot is created to download from spotify but you sent a soundcloud link.
+soundcloud_link_message = '''This bot is for downloading from spotify but you sent a soundcloud link.
 Send the link of your track/album/playlist from spotify'''
-youtube_link_message = '''This bot is created to download from spotify but you sent a youtube link.
+youtube_link_message = '''This bot is for downloading from spotify but you sent a youtube link.
 Send the link of your track/album/playlist from spotify'''
+instagram_link_message = '''This bot is for downloading from spotify but you sent an instagram link.
+Send the link of your track/album/playlist from spotify
+
+Or use my [instagram downloader](https://t.me/Best_Instagram_downloader_bot) for this link.'''
 spotify_episode_link_message = '''You can't send podcast episode links.
 Send the link of your track/album/playlist from spotify'''
 spotify_artist_link_message = '''You can't send artist links.
@@ -62,17 +74,15 @@ Send the link of your track/album/playlist from spotify'''
 spotify_user_link_message = '''You can't send user links.
 Send the link of your track/album/playlist from spotify'''
 
-# possible sentences for end_message
-# "You can use my *Instagram Downloader* too: @Best\_Instagram\_downloader\_bot"
 
-end_message = '''end.
+successfull_end_message = '''Me:\n[Youtube](https://www.youtube.com/@Arashnm80) • [𝕏](https://x.com/Arashnm80) • [Github](https://github.com/arashnm80)'''
 
-Give me a star in [Github](https://github.com/arashnm80/spot-seek-bot)⭐😉
-Subscribe to [My YouTube](https://www.youtube.com/@Arashnm80) for more🔥'''
+# successfull_end_message = '''If you liked the bot you can support me by giving a star [here](https://github.com/arashnm80/spot-seek-bot)⭐ (it's free)
 
-# end_message = '''end.
+# You can also check out my *Instagram Downloader* too: @Best\_Instagram\_downloader\_bot'''
 
-# rate me 5⭐ in [BotsArchive](https://t.me/BotsArchive/3104)🙂🙏'''
+# # replaced with promotion ad
+# successfull_end_message = "end.\n\n💰 You’re not broke — you’re just paying wrong. Why spend $10–$15 monthly on Spotify & YouTube when others get the same premium for as low as $5/month or $20/year? Join 👉 @pinocelchannel 💡"
 
 sth_to_download_message = '''You already have some link to download, wait for me to finish it.
 
@@ -87,10 +97,19 @@ Or an album link like:
 https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
 
 Or a playlist link like:
-https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs'''
+https://open.spotify.com/playlist/3ceLS7hutXrwz03g0c11gW'''
+
+starpal_promotion_msg = \
+'''⭐️خرید ستاره تلگرام بدون احراز هویت و در کمتر از ۲ دقیقه!  👈  starpal.ir'''
 
 # download directory
 directory = "./output/"
+
+# number of simultaneous downloads
+simultaneous_downloads = 8
+
+# timer to balance yt-dlp limit
+queue_handler_sleep_timer = 5
 
 # paths
 received_links_folder_path = "./received_links"
@@ -104,6 +123,7 @@ spotify_correct_link_pattern = spotify_track_link_pattern + "|" + spotify_album_
 deezer_link_pattern = r'https?:\/\/(?:www\.)?deezer\.com\/(?:\w{2}\/)?(?:\w+\/)?(?:track|album|artist|playlist)\/\d+'
 soundcloud_link_pattern = r"(?:https?://)?(?:www\.)?soundcloud\.com/([a-zA-Z0-9-_]+)/([a-zA-Z0-9-_]+)"
 youtube_link_pattern = r"(?:(?:https?:)?//)?(?:www\.)?(?:(?:youtube\.com/(?:watch\?.*v=|embed/|v/)|youtu.be/))([\w-]{11})"
+instagram_link_pattern = r'(?:https?://www\.)?instagram\.com\S*?/(p|reel)/([a-zA-Z0-9_-]{11})/?'
 spotify_episode_link_pattern = r'https?:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?episode\/[a-zA-Z0-9]+'
 spotify_artist_link_pattern = r'https?:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?artist\/[a-zA-Z0-9]+'
 spotify_user_link_pattern = r'https?:\/\/open\.spotify\.com\/(intl-[a-zA-Z]{2}\/)?user\/[a-zA-Z0-9]+'
@@ -121,12 +141,9 @@ warp_proxies = json.loads(warp_proxies)
 warp_session = requests.Session()
 warp_session.proxies.update(warp_proxies)
 
-# percentage of playlist tracks to be downloaded (1 is all of them and 0 is none)
-playlist_download_rate = 0.5
-
-# forward multiple tracks if they are already available in database
-# reduces wait time for users. it can be a number like 10, 20, 50, ...
-queue_handler_max_forwards_in_a_row = 10
+# proxychains
+proxychains4_config_file = "/etc/proxychains4.conf" # from x-ui panel
+# proxychains4_config_file = "/etc/proxychains4-oblivion-warp.conf" # from bepass-org
 
 # promote channel
 promote_channel_username = "@Arashnm80_Channel"
@@ -142,19 +159,10 @@ spotify_apps_list = json.loads(spotify_apps_list)
 
 # spotdl
 spotdl_cache_path = "/root/.spotdl"
-spotdl_executable_link = "https://github.com/spotDL/spotify-downloader/releases/download/v4.2.11/spotdl-4.2.11-linux"
+spotdl_executable_link = "https://github.com/spotDL/spotify-downloader/releases/download/v4.4.2/spotdl-4.4.2-linux"
 
-# database csv columns
-db_time_column = 0
-db_sp_track_column = 1
-db_tl_audio_column = 2
-
-# users csv columns
-ucsv_user_id_column = 0
-ucsv_last_time_column = 1
-
-# data and time format in csv files
-datetime_format = "%Y/%m/%d-%H:%M:%S"
+# yt-dlp
+yt_dlp_cache_path = "/root/.cache/yt-dlp"
 
 # necessary time in seconds for user to wait between 2 requests
 user_request_wait = 30
@@ -174,3 +182,29 @@ This feature will be added later."
 user_blocked_me_error = "A request to the Telegram API was unsuccessful. Error code: 403. Description: Forbidden: bot was blocked by the user"
 
 deactivated_user_error = "A request to the Telegram API was unsuccessful. Error code: 403. Description: Forbidden: user is deactivated"
+
+# Liste de messages de remerciement à reconnaître
+thank_you_keywords = [
+    'thank you',
+    'thanks',
+    'thank',
+    'merci',
+    'tnx',
+    'thx',
+    '❤️',
+    '♥',
+    '🙏',
+    'ممنون'
+    'مرسی'
+    'تشکر'
+]
+
+
+# fixme - credentials
+# list of socks5 proxies in this format:
+# "socks5://username:password@ip:port"
+socks_proxies = [
+
+]
+current_proxy_index = 0
+current_proxy = socks_proxies[current_proxy_index]

@@ -74,11 +74,11 @@ add this text to crontab (change with the path you've cloned repository):
 
 ## TO-DO: ideas & bugs to fix & features to add
 - [ ] support searching name of song by user
-- [ ] support inline mode
+- [x] support inline mode
 - [ ] option to enable or disable warp mode for everything (spotipy, spotdl, ...)
 - [x] ~fix caption so it will be shown for repetitive tracks~
 - [x] ~some musics metadata is not shown~
-- [ ] bot should send available tracks to users while new one is being downloaded with spotdl to use best of time.
+- [x] bot should send available tracks to users while new one is being downloaded with spotdl to use best of time.
 - [ ] higher priority for first time users
 - [x] ~only 1 single user can use the bot and it can't multitask~
 - [ ] use a library like telethon for big mp3 files more than 50MB
@@ -91,7 +91,7 @@ add this text to crontab (change with the path you've cloned repository):
 - [x] if all track_ids that a user wants already exists bypass normall routine and send all of them to him
 - [x] ~test `portalocker` funcion from `db_csv_append` separately~
 - [x] handle blocked by user link
-- [ ] manage too threads bug
+- [x] manage too threads bug
 - [x] ~regex should handle both http and https~
 - [x] make `restart_spotseek.sh` work without reboot too
 - [ ] restarting queue handler doesn't stop previous spotdl download so there might be an excessive mp3 file that might lead to creating wrong track
@@ -102,6 +102,9 @@ add this text to crontab (change with the path you've cloned repository):
 - [ ] private playlist answer
 - [ ] more features for premium users
 - [ ] read track data without api key in similar way to https://spotify.detta.dev/
+
+## errors
+`YT-DLP`: probabely the ip is banned by youtube. change it to another.
 
 ## disclaimer
 This project is for personal learning, do not use it for illegal purposes. Artists can send their copyright claims to the developer.

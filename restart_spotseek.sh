@@ -29,4 +29,4 @@ source "$SCRIPT_DIR/venv/bin/activate"
 # Run the Python script using the virtual environment's Python interpreter
 nohup python3 "$SCRIPT_NAME" > /dev/null 2>&1 &
 
-echo "Script restarted successfully."
+echo "$SCRIPT_NAME restarted successfully."

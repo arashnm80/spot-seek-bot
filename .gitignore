@@ -13,3 +13,7 @@ nohup.out
 spotseek.sh
 test.py
 test2.py
+backup.log
+backup_nohup.log
+developer_account.session
+developer_account.session-journal

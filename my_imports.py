@@ -22,3 +22,4 @@ import portalocker # for experimental queue handler bypass - used in db_csv_appe
 import random # to choose random spotify app to be used in api
 
 import sqlite3 # to use sqlite3 database
+import boto3 # for S3 upload

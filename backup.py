@@ -35,7 +35,7 @@ PHONE_NUMBER = os.environ.get('DEVELOPER_TELEGRAM_PHONE_NUMBER')
 # To resume from a specific point, change START_INDEX to the last processed index + 1
 # Example: if the script stopped at index 150, set START_INDEX = 151
 # Check the logs for "index:XXX" to find where to resume
-START_INDEX = 7709  # Change this to resume from a specific index
+START_INDEX = 7748  # Change this to resume from a specific index
 
 # warp socks proxy
 warp_proxies = os.environ["WARP_PROXIES"]
@@ -77,43 +77,68 @@ class TelegramDownloader:
         await self.client.start(phone=PHONE_NUMBER)
         print("Client Telethon initialisé")
     
-    def send_audio_to_channel(self, audio_id, track_id, channel_id):
-        """Envoie un fichier audio dans le canal via l'API bot"""
-        url = f'https://api.telegram.org/bot{self.bot_token}/sendAudio'
+    def send_media_group_to_channel(self, tracks_batch, channel_id):
+        """Envoie un groupe de fichiers audio dans le canal via l'API bot"""
+        url = f'https://api.telegram.org/bot{self.bot_token}/sendMediaGroup'
+        
+        # Prepare media group with audio files and captions
+        media = []
+        for track_data in tracks_batch:
+            db_index, track_id, audio_id = track_data
+            media.append({
+                'type': 'audio',
+                'media': audio_id,
+                'caption': track_id
+            })
+        
         data = {
             'chat_id': channel_id,
-            'audio': audio_id,
-            'caption': track_id
+            'media': json.dumps(media)
         }
         
         # Try sending with current session, handle connection errors
         for attempt in range(2):  # Max 2 attempts
             try:
-                print("before sendAudio post request")
-                response = self.session.post(url, data=data, timeout=30)
-                print("after sendAudio post request")
+                print(f"before sendMediaGroup post request for {len(tracks_batch)} files")
+                response = self.session.post(url, data=data, timeout=60)  # Increased timeout for groups
+                print("after sendMediaGroup post request")
                 
                 if response.status_code == 200:
                     result = response.json()
                     if result['ok']:
-                        message_id = result['result']['message_id']
-                        # Get the audio_id from the sent message
-                        sent_audio_id = result['result']['audio']['file_id']
+                        messages = result['result']
+                        print(f"Groupe de {len(messages)} fichiers envoyé dans le canal {channel_id}")
                         
-                        # Check if audio_id changed
-                        if sent_audio_id != audio_id:
-                            print(f"⚠️ Audio ID changed: {audio_id} → {sent_audio_id}")
-                        else:
-                            print(f"✓ Audio ID unchanged: {audio_id}")
+                        # Return list of (message_id, sent_audio_id, track_id) tuples
+                        sent_data = []
+                        for i, message in enumerate(messages):
+                            message_id = message['message_id']
+                            sent_audio_id = message['audio']['file_id']
+                            original_track_id = tracks_batch[i][1]  # track_id from original batch
+                            message_caption = message.get('caption', '')
+                            
+                            # Safety check: verify track_id matches caption
+                            if message_caption != original_track_id:
+                                print(f"⚠️ WARNING: Track ID mismatch! Expected: {original_track_id}, Caption: {message_caption}")
+                                print(f"   Skipping this file for safety")
+                                continue
+                            
+                            # Check if audio_id changed
+                            original_audio_id = tracks_batch[i][2]
+                            if sent_audio_id != original_audio_id:
+                                print(f"⚠️ Audio ID changed: {original_audio_id[:15]}... → {sent_audio_id[:15]}...")
+                            else:
+                                print(f"✓ Audio ID unchanged: {sent_audio_id[:15]}...")
+                            
+                            sent_data.append((message_id, sent_audio_id, original_track_id))
                         
-                        print(f"Fichier {audio_id} envoyé dans le canal {channel_id}, message_id: {message_id}")
-                        return message_id, sent_audio_id
+                        return sent_data
                     else:
-                        print(f"Erreur lors de l'envoi: {result['description']}")
-                        return None, None
+                        print(f"Erreur lors de l'envoi du groupe: {result['description']}")
+                        return None
                 else:
                     print(f"Erreur HTTP: {response.status_code}")
-                    return None, None
+                    return None
                     
             except (requests.exceptions.ConnectionError, requests.exceptions.Timeout) as e:
                 print(f"Erreur de connexion (tentative {attempt + 1}/2): {e}")
@@ -122,53 +147,69 @@ class TelegramDownloader:
                     self.session.close()
                     self.session = requests.Session()  # Create new session
                 else:
-                    print(f"Échec définitif pour {track_id} après 2 tentatives")
-                    return None, None
+                    print(f"Échec définitif pour le groupe après 2 tentatives")
+                    return None
         
-        return None, None
+        return None
     
-    async def upload_latest_audio_to_s3(self, track_id, channel_id, message_id):
-        """Télécharge le fichier audio spécifique du canal et l'upload vers S3"""
+    async def upload_media_group_to_s3(self, sent_data, channel_id):
+        """Télécharge un groupe de fichiers audio du canal et les upload vers S3"""
+        uploaded_files = []
+        
         try:
-            # Récupère le message spécifique par son ID
-            message = await self.client.get_messages(channel_id, ids=message_id)
+            # Get all message IDs from the sent data
+            message_ids = [data[0] for data in sent_data]
             
-            if not message:
-                print(f"Message {message_id} non trouvé dans le canal {channel_id}")
-                return None
+            # Récupère tous les messages du groupe en une seule fois
+            messages = await self.client.get_messages(channel_id, ids=message_ids)
             
-            # Vérifie si le message contient un fichier audio
-            if message.audio:
-                # Utilise le track_id comme nom de fichier
-                s3_key = f"{track_id}.mp3"
+            if not messages:
+                print(f"Messages {message_ids} non trouvés dans le canal {channel_id}")
+                return uploaded_files
+            
+            # Process each message in the group
+            for i, message in enumerate(messages):
+                message_id, sent_audio_id, track_id = sent_data[i]
                 
-                print(f"Upload vers S3 en cours: {s3_key}")
+                # Safety check: verify track_id matches message caption
+                message_caption = getattr(message, 'text', '') or getattr(message, 'caption', '')
+                if message_caption != track_id:
+                    print(f"⚠️ WARNING: Track ID mismatch in download! Expected: {track_id}, Caption: {message_caption}")
+                    print(f"   Skipping download for safety")
+                    continue
                 
-                # Télécharge le fichier en mémoire
-                audio_bytes = BytesIO()
-                await self.client.download_media(message.audio, audio_bytes)
-                audio_bytes.seek(0)
-                
-                # Upload vers S3
-                self.s3_client.put_object(
-                    Bucket=S3_BUCKET_NAME,
-                    Key=s3_key,
-                    Body=audio_bytes.getvalue(),
-                    ContentType='audio/mpeg'
-                )
-                
-                print(f"Fichier uploadé vers S3: s3://{S3_BUCKET_NAME}/{s3_key}")
-                return s3_key
-            else:
-                print("Le dernier message ne contient pas de fichier audio")
-                return None
-                
+                # Vérifie si le message contient un fichier audio
+                if message.audio:
+                    # Utilise le track_id comme nom de fichier
+                    s3_key = f"{track_id}.mp3"
+                    
+                    print(f"Upload vers S3 en cours: {s3_key}")
+                    
+                    # Télécharge le fichier en mémoire
+                    audio_bytes = BytesIO()
+                    await self.client.download_media(message.audio, audio_bytes)
+                    audio_bytes.seek(0)
+                    
+                    # Upload vers S3
+                    self.s3_client.put_object(
+                        Bucket=S3_BUCKET_NAME,
+                        Key=s3_key,
+                        Body=audio_bytes.getvalue(),
+                        ContentType='audio/mpeg'
+                    )
+                    
+                    print(f"Fichier uploadé vers S3: s3://{S3_BUCKET_NAME}/{s3_key}")
+                    uploaded_files.append((s3_key, track_id))
+                else:
+                    print(f"Le message {message_id} ne contient pas de fichier audio")
+                    
         except Exception as e:
-            print(f"Erreur lors de l'upload: {e}")
-            return None
+            print(f"Erreur lors de l'upload du groupe: {e}")
+            
+        return uploaded_files
     
-    async def process_tracks_from_db(self, start_index=0, delay=0.01):
-        """Process tracks from database starting from a specific index"""
+    async def process_tracks_from_db(self, start_index=0, delay=0.01, batch_size=10):
+        """Process tracks from database in batches starting from a specific index"""
         uploaded_files = []
         
         # Get tracks from database starting from start_index
@@ -180,50 +221,64 @@ class TelegramDownloader:
             logger.info("No tracks to process found in database")
             return uploaded_files
         
-        print(f"Traitement de {len(tracks_data)} tracks à partir de l'index {start_index}/{total_tracks}")
-        logger.info(f"Processing {len(tracks_data)} tracks starting from index {start_index}/{total_tracks}")
+        print(f"Traitement de {len(tracks_data)} tracks à partir de l'index {start_index}/{total_tracks} par groupes de {batch_size}")
+        logger.info(f"Processing {len(tracks_data)} tracks starting from index {start_index}/{total_tracks} in batches of {batch_size}")
         
-        for track_data in tracks_data:
-            db_index, track_id, audio_id = track_data
+        # Process tracks in batches
+        for i in range(0, len(tracks_data), batch_size):
+            batch = tracks_data[i:i + batch_size]
+            batch_start_index = batch[0][0]  # db_index of first track in batch
+            batch_end_index = batch[-1][0]   # db_index of last track in batch
             
-            print(f"\n--- Traitement index {db_index}: {track_id} ({audio_id[:15]}...) ---")
-            logger.info(f"START index:{db_index} track:{track_id} | audio_id:{audio_id[:15]}...")
+            print(f"\n=== Traitement du lot {i//batch_size + 1}: indices {batch_start_index}-{batch_end_index} ({len(batch)} fichiers) ===")
+            logger.info(f"BATCH START batch:{i//batch_size + 1} indices:{batch_start_index}-{batch_end_index} count:{len(batch)}")
             
             # Get next channel ID in rotation
             channel_id = self.get_next_channel_id()
             print(f"Utilisation du canal: {channel_id}")
             
-            # Envoie le fichier dans le canal
-            message_id, sent_audio_id = self.send_audio_to_channel(audio_id, track_id, channel_id)
-            if message_id and sent_audio_id:
-                # Update database with channel and message info using the sent audio_id
-                add_or_update_track_info(track_id, sent_audio_id, channel_id, message_id)
-                print(f"Base de données mise à jour pour {track_id} avec audio_id: {sent_audio_id}")
+            # Send media group to channel
+            sent_data = self.send_media_group_to_channel(batch, channel_id)
+            if sent_data:
+                # Update database for each track in the batch
+                for message_id, sent_audio_id, track_id in sent_data:
+                    add_or_update_track_info(track_id, sent_audio_id, channel_id, message_id)
+                    print(f"Base de données mise à jour pour {track_id} avec audio_id: {sent_audio_id[:15]}...")
                 
-                # Attend un peu pour que le message arrive
-                await asyncio.sleep(2)
+                # Wait for messages to arrive
+                await asyncio.sleep(3)
                 
-                # Upload le fichier vers S3
-                s3_key = await self.upload_latest_audio_to_s3(track_id, channel_id, message_id)
-                if s3_key:
-                    # Update S3 status in database
+                # Upload all files in the group to S3
+                batch_uploaded = await self.upload_media_group_to_s3(sent_data, channel_id)
+                
+                # Update S3 status for each successfully uploaded file
+                for s3_key, track_id in batch_uploaded:
                     update_s3_status(track_id, 1)
                     uploaded_files.append(s3_key)
                     print(f"✓ Succès: s3://{S3_BUCKET_NAME}/{s3_key} - S3 status mis à jour")
-                    logger.info(f"SUCCESS index:{db_index} track:{track_id} | ch:{channel_id} msg:{message_id} s3:OK")
-                else:
-                    print(f"✗ Échec de l'upload pour {track_id}")
-                    logger.error(f"FAIL index:{db_index} track:{track_id} | ch:{channel_id} msg:{message_id} s3:FAIL")
+                
+                # Log results for each track in batch
+                for j, (message_id, sent_audio_id, track_id) in enumerate(sent_data):
+                    db_index = batch[j][0]
+                    if any(track_id == t_id for _, t_id in batch_uploaded):
+                        logger.info(f"SUCCESS index:{db_index} track:{track_id} | ch:{channel_id} msg:{message_id} s3:OK")
+                    else:
+                        logger.error(f"FAIL index:{db_index} track:{track_id} | ch:{channel_id} msg:{message_id} s3:FAIL")
+                        print(f"✗ Échec de l'upload pour {track_id}")
             else:
-                print(f"✗ Échec de l'envoi pour {track_id}")
-                logger.error(f"FAIL index:{db_index} track:{track_id} | telegram_send:FAIL")
+                # Log failure for entire batch
+                for track_data in batch:
+                    db_index, track_id, audio_id = track_data
+                    print(f"✗ Échec de l'envoi pour {track_id}")
+                    logger.error(f"FAIL index:{db_index} track:{track_id} | telegram_send:FAIL")
             
             # Log current progress for resume functionality
-            print(f"Progression: {db_index + 1 - start_index}/{len(tracks_data)} (index global: {db_index})")
+            processed_count = min(i + batch_size, len(tracks_data))
+            print(f"Progression: {processed_count}/{len(tracks_data)} (index global: {batch_end_index})")
             
-            # Délai entre les uploads (sauf pour le dernier)
-            if track_data != tracks_data[-1]:
-                print(f"Attente de {delay} secondes...")
+            # Delay between batches (except for the last one)
+            if i + batch_size < len(tracks_data):
+                print(f"Attente de {delay} secondes avant le prochain lot...")
                 await asyncio.sleep(delay)
         
         return uploaded_files

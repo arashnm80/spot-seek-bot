@@ -8,3 +8,7 @@ spotipy
 spotipy-anon
 requests
 requests[socks]
+boto3
+telethon
+asyncio
+cryptg

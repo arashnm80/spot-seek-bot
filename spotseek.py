@@ -263,7 +263,8 @@ async def all_other_forms_of_messages(message):
     log(bot_name + " log:\n❌wrong link pattern from user: " + str(message.chat.id) + " with contents of:\n" + message.text)
 
 def main():
-    asyncio.run(bot.infinity_polling())
+    # asyncio.run(bot.infinity_polling())
+    asyncio.run(bot.infinity_polling(skip_pending=True)) # fixme - temporary to drop old messages while bot is off
 
 if __name__ == '__main__':
     main()

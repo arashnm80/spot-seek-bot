@@ -20,7 +20,6 @@ sudo apt update && sudo apt install -y docker.io docker-compose-plugin
 sudo systemctl enable --now docker
 sudo usermod -aG docker $USER
 ```
-# Log out and back in
 2. Clone the repo
 ```
 git clone https://github.com/yourusername/spot-seek-bot.git

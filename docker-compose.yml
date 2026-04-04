@@ -1,0 +1,16 @@
+services:
+  spotseek:
+    build: .
+    container_name: spotseek-bot
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    env_file:
+      - .env
+    volumes:
+      - ./output:/app/output
+      - ./received_links:/app/received_links
+      - ./music.db:/app/music.db
+      - ./database.csv:/app/database.csv
+      - ./users.csv:/app/users.csv
+      - ./.spotdl:/root/.spotdl

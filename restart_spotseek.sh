@@ -2,7 +2,7 @@
 
 # Define the app module and server settings for uvicorn
 APP_MODULE="spotseek:app"
-HOST="127.0.0.1"
+HOST="0.0.0.0"
 PORT="3006"
 
 # get address of current script file (which is repository directory)

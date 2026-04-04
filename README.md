@@ -10,7 +10,31 @@ https://open.spotify.com/album/0Lg1uZvI312TPqxNWShFXL
   - Or a playlist like this:
 https://open.spotify.com/playlist/37i9dQZF1DWX4UlFW6EJPs
 
-## how to deploy as the developer (I'm writing this guide for ubuntu)
+## How to deploy using Docker
+
+## Docker Deployment (Recommended)
+
+### 1. Install Docker on Ubuntu
+```bash
+sudo apt update && sudo apt install -y docker.io docker-compose-plugin
+sudo systemctl enable --now docker
+sudo usermod -aG docker $USER
+```
+2. Clone the repo
+```
+git clone https://github.com/yourusername/spot-seek-bot.git
+```
+cd spot-seek-bot
+3. Create the required files
+.env (never commit this file)
+
+5. Build & Run
+```Docker
+Bashdocker compose up --build -d
+docker compose logs -f
+```
+
+## how to deploy as the developer on a VPS(guide for ubuntu)
 - general pre-install updates in ubuntu:
 ```
 $ sudo apt update

@@ -16,6 +16,7 @@ from urllib.parse import urlparse
 import boto3
 from io import BytesIO
 import logging
+import paramiko # for sftp
 
 from FastTelethon import download_file as fast_download_file, upload_file as fast_upload_file
 
@@ -25,10 +26,21 @@ from FastTelethon import download_file as fast_download_file, upload_file as fas
 # # Check the logs for "index:XXX" to find where to resume
 # START_INDEX = 175968  # Change this to resume from a specific index
 
-START_LETTERS = "1XJU"
+START_LETTERS = "0"
 START_INDEX = get_start_index_by_letters(START_LETTERS)
 print(f"START_INDEX: {START_INDEX}")
 time.sleep(5)
+
+# sftp client
+sftp_client = paramiko.SSHClient()
+sftp_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+sftp_client.connect(
+    hostname=sftp_host,
+    port=sftp_port,
+    username=sftp_username,
+    password=sftp_password
+)
+sftp = sftp_client.open_sftp()
 
 
 # Fuseau horaire Tehran (+03:30)
@@ -55,6 +67,7 @@ logging.basicConfig(
 )
 
 logging.Formatter.converter = tehran_time
+logging.getLogger("telethon").setLevel(logging.WARNING)
 
 logger = logging.getLogger(__name__)
 
@@ -211,6 +224,9 @@ class TelegramDownloader:
                 if message.audio:
                     # Utilise le track_id comme nom de fichier
                     s3_key = f"{track_id}.mp3"
+
+                    # remote path for sftp
+                    remote_path = f"music/{s3_key}"
                     
                     print(f"Upload vers S3 en cours: {s3_key}")
                     
@@ -222,15 +238,18 @@ class TelegramDownloader:
                     audio_bytes.seek(0)
                     print("after download file via telethon")
                     
-                    print("before upload to s3")
-                    # Upload vers S3
-                    self.s3_client.put_object(
-                        Bucket=S3_BUCKET_NAME,
-                        Key=s3_key,
-                        Body=audio_bytes.getvalue(),
-                        ContentType='audio/mpeg'
-                    )
-                    print("after upload to s3")
+                    # print("before upload to s3")
+                    # # Upload vers S3
+                    # self.s3_client.put_object(
+                    #     Bucket=S3_BUCKET_NAME,
+                    #     Key=s3_key,
+                    #     Body=audio_bytes.getvalue(),
+                    #     ContentType='audio/mpeg'
+                    # )
+                    # print("after upload to s3")
+
+                    with sftp.file(remote_path, 'wb') as f:
+                        f.write(audio_bytes.read())
                     
                     print(f"Fichier uploadé vers S3: s3://{S3_BUCKET_NAME}/{s3_key}")
                     uploaded_files.append((s3_key, track_id))
@@ -322,6 +341,10 @@ class TelegramDownloader:
         if self.client:
             await self.client.disconnect()
             print("Client déconnecté")
+
+            sftp.close()
+            sftp_client.close()
+            print("sftp closed")
 
 async def main():
     """Fonction principale"""

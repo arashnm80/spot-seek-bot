@@ -20,7 +20,7 @@ import telebot
 from telebot import types
 from telebot.async_telebot import AsyncTeleBot
 from telebot.types import Update # for new webhook system
-from telebot.types import InlineQueryResultCachedAudio, ReactionTypeEmoji
+from telebot.types import InlineQueryResultCachedAudio, ReactionTypeEmoji, ReplyParameters
 
 import threading # to use lock
 import time # for sleep

@@ -1,3 +1,4 @@
+python-dotenv
 aiohttp
 telebot
 pandas
@@ -6,7 +7,7 @@ mutagen
 portalocker
 spotipy
 spotipy-anon
-requests
+spotipyfree
 requests[socks]
 boto3
 telethon
@@ -16,3 +17,7 @@ flask
 fastapi
 uvicorn
 mautrix
+yt-dlp[default,curl-cffi]
+spotdl
+curl_cffi
+paramiko

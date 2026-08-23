@@ -8,53 +8,53 @@ def register_handlers(bot):
     # defined commands
     @bot.message_handler(commands = ['start'])
     async def start_message_handler(message):
-        await bot.send_message(message.chat.id, welcome_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, welcome_message)
         log(bot_name + " log:\n📥 /start command sent from user: " + str(message.chat.id))
 
     @bot.message_handler(commands = ['info'])
     async def info_message_handler(message):
-        await bot.send_message(message.chat.id, info_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, info_message)
         log(bot_name + " log:\n📥 /info command sent from user: " + str(message.chat.id))
 
     @bot.message_handler(commands = ['privacy'])
     async def privacy_message_handler(message):
-        await bot.send_message(message.chat.id, privacy_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, privacy_message)
         log(bot_name + " log:\n📥 /privacy command sent from user: " + str(message.chat.id))
 
     # wrong defined patterns such as deezer, youtube, ...
     @bot.message_handler(regexp = deezer_link_pattern)
     async def deezer_link_handler(message):
-        await bot.send_message(message.chat.id, deezer_link_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, deezer_link_message)
         log(bot_name + " log:\n🔗❌ deezer link sent from user: " + str(message.chat.id))
 
     @bot.message_handler(regexp = soundcloud_link_pattern)
     async def soundcloud_link_handler(message):
-        await bot.send_message(message.chat.id, soundcloud_link_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, soundcloud_link_message)
         log(bot_name + " log:\n🔗❌ soundcloud link sent from user: " + str(message.chat.id))
 
     @bot.message_handler(regexp = youtube_link_pattern)
     async def youtube_link_handler(message):
-        await bot.send_message(message.chat.id, youtube_link_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, youtube_link_message)
         log(bot_name + " log:\n🔗❌ youtube link sent from user: " + str(message.chat.id))
 
     @bot.message_handler(regexp = instagram_link_pattern)
     async def instagram_link_handler(message):
-        await bot.send_message(message.chat.id, instagram_link_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, instagram_link_message)
         log(bot_name + " log:\n🔗❌ instagram link sent from user: " + str(message.chat.id))
 
     @bot.message_handler(regexp = spotify_episode_link_pattern)
     async def spotify_episode_link_handler(message):
-        await bot.send_message(message.chat.id, spotify_episode_link_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, spotify_episode_link_message)
         log(bot_name + " log:\n🔗❌ episode link sent from user: " + str(message.chat.id))
 
     @bot.message_handler(regexp = spotify_artist_link_pattern)
     async def spotify_artist_link_handler(message):
-        await bot.send_message(message.chat.id, spotify_artist_link_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, spotify_artist_link_message)
         log(bot_name + " log:\n🔗❌ artist link sent from user: " + str(message.chat.id))
 
     @bot.message_handler(regexp = spotify_user_link_pattern)
     async def spotify_user_link_handler(message):
-        await bot.send_message(message.chat.id, spotify_user_link_message, parse_mode="Markdown", disable_web_page_preview=True)
+        await bot.send_message(message.chat.id, spotify_user_link_message)
         log(bot_name + " log:\n🔗❌ user link sent from user: " + str(message.chat.id))
 
     # thank you message from user
@@ -99,7 +99,14 @@ def register_handlers(bot):
     # correct pattern
     @bot.message_handler(regexp = spotify_correct_link_pattern)
     async def handle_correct_spotify_link(message):
-        try:      
+        try:
+            # Update user information in database
+            user_id = message.from_user.id
+            username = message.from_user.username
+            language_code = message.from_user.language_code
+            is_premium = message.from_user.is_premium if message.from_user.is_premium is not None else False
+            add_or_update_user(user_id, username, language_code, is_premium)
+            
             beginning_log_text = (
                 f"{bot_name} log:\n\n"
                 f"🔗✅ correct link pattern.\n\n"
@@ -113,26 +120,28 @@ def register_handlers(bot):
             # reaction = [ReactionTypeEmoji(emoji='👍')]
             # await bot.set_message_reaction(message.chat.id, message.message_id, reaction)
 
-            # Check the membership status and stop continuing if user is not a member
-            print(f"1️⃣ before check_membership {message.chat.id}")
-            is_member = check_membership(promote_channel_username, message.chat.id)
-            print(f"2️⃣ after check_membership {message.chat.id}")
-
-            if is_member:
+            # check if user is a member of the channel
+            chat_member = await bot.get_chat_member(promote_channel_username, message.chat.id)
+            allowed_types = (
+                telebot.types.ChatMemberOwner,
+                telebot.types.ChatMemberAdministrator,
+                telebot.types.ChatMemberMember
+            )
+            if isinstance(chat_member, allowed_types):
                 log(beginning_log_text + "\n\n👥member of channel: ✅")
             else:
                 log(beginning_log_text + "\n\n👥member of channel: ❌")
-                
                 # Send message with join button to user
                 keyboard = types.InlineKeyboardMarkup()
                 channel_button = types.InlineKeyboardButton(text='Join', url=promote_channel_link)
                 keyboard.add(channel_button)
-                await bot.send_message(message.chat.id,
-                                not_subscribed_to_channel_message,
-                                parse_mode="Markdown",
-                                disable_web_page_preview=True,
-                                reply_markup=keyboard)
-
+                await bot.send_message(
+                    message.chat.id,
+                    not_subscribed_to_channel_message,
+                    parse_mode="Markdown",
+                    disable_web_page_preview=True,
+                    reply_markup=keyboard
+                )
                 return
 
             valid_spotify_links_in_user_text = get_valid_spotify_links(message.text)
@@ -182,31 +191,43 @@ def register_handlers(bot):
                     available_tracks += 1
                 else:
                     tracks_to_download.append(track_id)
+                    # send notification for unavailable tracks
+                    # todo: get_track_info_from_track_id has too many requests and leads to rate limit
+                    #       for now just send the message with track link. for long term, add cache for track names.
+                    # track_name = get_track_info_from_track_id(track_id)
+                    track_link = f"https://open.spotify.com/track/{track_id}"
+                    await do_with_retry(
+                        bot.send_message,
+                        message.chat.id,
+                        f"track [{track_id}]({track_link}) is not available yet, try again for it later.",
+                        disable_notification=True,
+                        parse_mode="Markdown"
+                    )
+                    await asyncio.sleep(1)
+
                 # send media group if they become 10 or they are remaining for last pack
                 if len(media_group) == 10 or (len(media_group) > 0 and not matches):
-                    try:
-                        if len(media_group) == 1: # there is only one track
-                            await bot.send_audio(message.chat.id, media_group[0].media, caption=bot_username, disable_notification=True)
-                            print(f"single audio sent to user {message.chat.id}")
-                        else: # there are at least 2 tracks
-                            await bot.send_media_group(message.chat.id, media_group, disable_notification=True)
-                            print(f"media group sent to user {message.chat.id}")
-                    except telebot.asyncio_helper.ApiTelegramException as e:
-                        if e.error_code == 429: # rate limit error
-                            # extract retry_after from error description
-                            retry_after = int(e.description.split("retry after ")[1])
-                            log(f"Rate limit hit, waiting {retry_after} seconds for user {message.chat.id}")
-                            await asyncio.sleep(retry_after)
-                            # retry the same operation
-                            if len(media_group) == 1:
-                                await bot.send_audio(message.chat.id, media_group[0].media, caption=bot_username, disable_notification=True)
-                                print(f"single audio sent to user {message.chat.id}")
-                            else:
-                                await bot.send_media_group(message.chat.id, media_group, disable_notification=True)
-                                print(f"media group sent to user {message.chat.id}")
-                        else:
-                            raise # re-raise other errors
-                    media_group = [] # empty the media group
+                    # try:
+                    if len(media_group) == 1: # there is only one track
+                        await do_with_retry(
+                            bot.send_audio,
+                            message.chat.id,
+                            media_group[0].media,
+                            caption=bot_username,
+                            disable_notification=True
+                        )
+                        print(f"single audio sent to user {message.chat.id}")
+                    else: # there are at least 2 tracks
+                        await do_with_retry(
+                            bot.send_media_group,
+                            message.chat.id,
+                            media_group,
+                            disable_notification=True
+                        )
+                        print(f"media group sent to user {message.chat.id}")
+
+                    # empty the media group
+                    media_group = []
                     await asyncio.sleep(1)
 
             # add unavailable tracks to queue (if there are any)
@@ -215,26 +236,28 @@ def register_handlers(bot):
 
             # no tracks left for queue handler
             if not matches:
-                if available_tracks == 0 and total_tracks == 1:
-                    end_message = f"Sorry, this track is not available in my database at the moment.\nI'll try to download it as soon as possible.\nBut you are welcome to try me with other spotify links❤️."
-                elif available_tracks == 0:
-                    end_message = f"Sorry, none of these tracks were available in my database.\nI'll try to download them as soon as possible.\nBut you are welcome to try me with other spotify links❤️."
+                if available_tracks == 0:
+                    end_message = f"end💔."
                 elif available_tracks < total_tracks:
-                    end_message = f"{available_tracks} of {total_tracks} tracks were available in my database.\nI'll try to download the rest as soon as possible.\nYou are welcome to try me with other spotify links❤️."
+                    end_message = f"{available_tracks} of {total_tracks} done✅."
                 else:
                     end_message = successfull_end_message
-                    # starpal promotion
+                    # starpal promotion or ask for boost
                     if message.from_user.language_code == "fa":
-                        end_message = starpal_promotion_msg
-                        log(f"{bot_username} log:\n\nuser: {message.chat.id}\n\n⭐️ starpal promotion for iranian user")
-                await bot.send_message(message.chat.id, end_message, parse_mode="Markdown", disable_web_page_preview=True)
+                        # end_message = starpal_promotion_msg
+                        # log(f"{bot_username} log:\n\nuser: {message.chat.id}\n\n⭐️ starpal promotion for iranian user")
+                        pass
+                    elif is_premium:
+                        # await bot.send_message(message.chat.id, "I noticed you have Telegram Premium. Can you give me a few boosts?🙃\nhttps://t.me/boost/Arashnm80\_Persian", disable_web_page_preview=True)
+                        pass
+                await bot.send_message(message.chat.id, end_message, reply_parameters=ReplyParameters(message_id=message.message_id))
                 return
 
         except Exception as e:
             log(bot_name + " log:\n🛑 A general error occurred: " + str(e))
             print(traceback.format_exc())
             try: # I added this try & except block to check if I can solve the unclosed spotseek.py processes
-                await bot.send_message(message.chat.id, unsuccessful_process_message, parse_mode="Markdown")
+                await bot.send_message(message.chat.id, unsuccessful_process_message)
             except:
                 return
 
@@ -280,6 +303,7 @@ def register_handlers(bot):
         telegram_audio_id = get_telegram_audio_id(track_id)
         await bot.send_audio(call.message.chat.id, telegram_audio_id, caption=bot_username)
         await bot.answer_callback_query(call.id)
+        await bot.send_message(call.message.chat.id, successfull_end_message)
 
     # any other thing received by bot
     @bot.message_handler(func=lambda message: True)

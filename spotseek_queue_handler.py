@@ -5,9 +5,11 @@ if __name__ == "__main__":
     try:
         # emperimental - remove old spotdl exe and download it again to see if affects limits
         setup_spotdl_executable()
+        create_database()
+        send_log_channel("QueueHandler started")
 
         while True:
-            time.sleep(5)  # delay for each complete loop of queue handler
+            time.sleep(1)  # delay for each complete loop of queue handler
 
             files = list_of_files_in_a_folder(received_links_folder_path)
             download_list = []
@@ -24,6 +26,7 @@ if __name__ == "__main__":
                     telegram_audio_id = get_telegram_audio_id(track_id)
                     if telegram_audio_id is not None:
                         log(f"🤸‍♀️ track {track_id} exists in db now. skip.")
+                        queue_note("skipped_in_db")
                         continue
                     else:
                         download_list.append(track_id)
@@ -55,4 +58,5 @@ if __name__ == "__main__":
                 download_list = []
 
     except Exception as e:
-        log(bot_name + " log:\n🛑 An error in queue handler: " + str(e) + "\nfor user: " + str(user_id))
+        log(bot_name + " log:\n🛑 An error in queue handler: " + str(e))
+        queue_flush(reason=f"🛑 queue handler stopped:\n{e}")

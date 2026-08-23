@@ -54,13 +54,10 @@ def download_tracks(track_ids_list):
         global current_proxy_index
         global queue_handler_sleep_timer
         log(f"sleep timer: {queue_handler_sleep_timer}")
-        time.sleep(queue_handler_sleep_timer)  # dynamic delay for yt-dlp
+        time.sleep(queue_handler_sleep_timer)  # small delay between batches for yt-dlp
 
-    
-        # experimental - to see if has effect on spotdl rate limits - debug
-        delete_spotdl_cache()
-        # experimental again - yt-dlp cache
-        delete_yt_dlp_cache()
+        # Keep ~/.spotdl and yt-dlp caches. Wiping them forced a 5s secrets timeout
+        # to code.thetadev.de on every batch and slowed matching.
 
         # remove files and folders in directory
         clear_files(directory)
@@ -72,6 +69,7 @@ def download_tracks(track_ids_list):
             # if item exists in db
             if telegram_audio_id is not None:
                 log(f"track {track_id} exists in db now. skip.")
+                queue_note("skipped_in_db", track_id=track_id)
                 track_ids_list.remove(track_id)
 
         # if list became empty
@@ -98,12 +96,15 @@ def download_tracks(track_ids_list):
             spotify_client_secret = spotify_app[1]
 
             command = [
-                    #    "proxychains4", "-f", proxychains4_config_file,
-                       "../spotdl",
+                       "proxychains4", "-f", proxychains4_config_file,
+                       spotdl_bin,
                     #    "--client-id", spotify_client_id, "--client-secret", spotify_client_secret,
+                       "--audio", spotdl_audio_provider,
+                       "--lyrics",
+                       "--skip-album-art",
                        "--bitrate", "320k",
                     #    "--yt-dlp-args", "--config-location ../yt-dlp.conf",
-                       "--yt-dlp-args", f"--proxy {socks_proxies[current_proxy_index]}",
+                    #    no --yt-dlp-args --proxy (double tunnel) and no -f 140; Deno on PATH → bestaudio/251
                        "--output", "{track-id}/",
                        "download"
                        ]
@@ -111,9 +112,18 @@ def download_tracks(track_ids_list):
             for track_id in track_ids_list:
                 command.append(f"https://open.spotify.com/track/{track_id}")
             # download in a subprocess with a timeout (does it in ouput folder)
-            subprocess.run(command, cwd=directory, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=300)
+            print("download command:\n\n", command) # debug
+            subprocess.run(
+                command,
+                cwd=directory,
+                env=get_spotdl_download_env(),
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=300,
+            )
         except Exception as e:
             log(bot_name + " error in spotdl download")
+            queue_note("spotdl_fail", n=len(track_ids_list), detail="spotdl exception")
             return "errorInSpotdlDownload"
 
         at_least_one_track_downloaded = False # sometimes jumps to next pack without downloading anything and giving any error
@@ -123,6 +133,13 @@ def download_tracks(track_ids_list):
             # Listing folders in the output directory - each folder name is track_id of one song
             folders = [name for name in os.listdir(directory) if os.path.isdir(os.path.join(directory, name))]
             print("folders (which are track ids):", folders)
+            # S3 disabled: bucket deleted (cost). Restore this client + put_object if needed.
+            # s3_client = boto3.client(
+            #     's3',
+            #     endpoint_url=S3_ENDPOINT,
+            #     aws_access_key_id=S3_ACCESS_KEY,
+            #     aws_secret_access_key=S3_SECRET_KEY
+            # )
             for track_id in folders:
                 # check if folder name is in the track_ids_list
                 # opposite of that should never happen
@@ -133,60 +150,67 @@ def download_tracks(track_ids_list):
                 print("track_id based on folder:", track_id)
                 track_folder_path = f"{directory}{track_id}/"
                 print("track folder path:", track_folder_path)
-                # download cover image
-                image_url = get_track_image(track_id)
-                print("downloading image from url:", image_url)
-                # todo: make this subprocess secure later by turning shell False and using list
-                subprocess.run(f"wget -O cover.jpg -o /dev/null \"{image_url}\"", shell=True, cwd=track_folder_path, timeout=300)
-                # get mp3 file name from folder
                 try:
-                    mp3_file = get_single_mp3(track_folder_path)
-                except Exception as e:
-                    log(bot_name + f" log:\n\ncurrent_proxy_index: {current_proxy_index}\nsleep_timer: {queue_handler_sleep_timer}\n\n🛑 error in get_single_mp3() for track:\n" + track_id +"\n\nerror:\n" + str(e))
-                    continue
-                log(f"current_proxy_index: {current_proxy_index}\n\n🔵 there is a downloaded mp3 file:\n{mp3_file}")
-                # change cover image
-                change_cover_image(mp3_file, "cover.jpg", track_folder_path)
-                # check file size because of telegram 50MB limit
-                audio_path = os.path.join(track_folder_path, mp3_file)
-                audio = open(audio_path, 'rb')
-                file_size = os.fstat(audio.fileno()).st_size
-                if file_size > 50_000_000:
-                    log(bot_name + " log:\n🛑 too big mp3 file error")
+                    # download cover image
+                    image_url = get_track_image(track_id)
+                    print("downloading image from url:", image_url)
+                    # todo: make this subprocess secure later by turning shell False and using list
+                    subprocess.run(f"wget -O cover.jpg -o /dev/null \"{image_url}\"", shell=True, cwd=track_folder_path, timeout=300)
+                    # get mp3 file name from folder
+                    try:
+                        mp3_file = get_single_mp3(track_folder_path)
+                    except Exception as e:
+                        log(bot_name + f" log:\n\ncurrent_proxy_index: {current_proxy_index}\nsleep_timer: {queue_handler_sleep_timer}\n\n🛑 error in get_single_mp3() for track:\n" + track_id +"\n\nerror:\n" + str(e))
+                        queue_note("no_mp3", track_id=track_id, detail="no mp3")
+                        continue
+                    log(f"current_proxy_index: {current_proxy_index}\n\n🔵 there is a downloaded mp3 file:\n{mp3_file}")
+                    # change cover image
+                    change_cover_image(mp3_file, "cover.jpg", track_folder_path)
+                    # check file size because of telegram 50MB limit
+                    audio_path = os.path.join(track_folder_path, mp3_file)
+                    audio = open(audio_path, 'rb')
+                    file_size = os.fstat(audio.fileno()).st_size
+                    if file_size > 50_000_000:
+                        log(bot_name + " log:\n🛑 too big mp3 file error")
+                        queue_note("too_big", track_id=track_id, detail="too big")
+                        audio.close()
+                        continue
+                    # get track metadata to be shown in telegram
+                    track_duration = get_track_duration(audio_path)
+                    track_artist = get_artist_name_from_track(audio_path)
+                    track_title = get_track_title(audio_path)
+                    thumb_image = open(track_folder_path + "cover_low.jpg", 'rb')
+                    # send audio to database_channel:
+                    audio_message = bot.send_audio(SP11_CHANNEL_ID, audio, thumb=thumb_image, caption=track_id, duration=track_duration, performer=track_artist, title=track_title)
+                    # add file to database - new method based on sqlite3 db
+                    # add_or_update_track_info(track_id, audio_message.audio.file_id) # before new db functions system of backup
+                    add_or_update_track_info(track_id, audio_message.audio.file_id, SP11_CHANNEL_ID, audio_message.message_id, download_method=spotdl_audio_provider) # after new db functions system of backup
+                    # S3 disabled (bucket deleted). Was: put_object music/{track_id}.mp3 then update_s3_status(track_id, 1)
+                    # try:
+                    #     s3_key = f"{track_id}.mp3"
+                    #     with open(audio_path, 'rb') as audio_file:
+                    #         s3_client.put_object(
+                    #             Bucket=S3_BUCKET_NAME,
+                    #             Key=s3_key,
+                    #             Body=audio_file,
+                    #             ContentType='audio/mpeg'
+                    #         )
+                    #     update_s3_status(track_id, 1)
+                    # except Exception as e:
+                    #     log(bot_name + f" log:\nS3 upload failed for {track_id} (kept in db/telegram):\n{e}")
                     audio.close()
+                    thumb_image.close()
+                    at_least_one_track_downloaded = True
+                    queue_note("ok", track_id=track_id)
+                except Exception as e:
+                    log(bot_name + f"\nerror processing track {track_id}:\n" + str(e))
+                    queue_note("error", track_id=track_id, detail=str(e)[:80])
                     continue
-                # get track metadata to be shown in telegram
-                track_duration = get_track_duration(audio_path)
-                track_artist = get_artist_name_from_track(audio_path)
-                track_title = get_track_title(audio_path)
-                thumb_image = open(track_folder_path + "cover_low.jpg", 'rb')
-                # send audio to database_channel:
-                audio_message = bot.send_audio(SP11_CHANNEL_ID, audio, thumb=thumb_image, caption=track_id, duration=track_duration, performer=track_artist, title=track_title)
-                # add file to database - new method based on sqlite3 db
-                # add_or_update_track_info(track_id, audio_message.audio.file_id) # before new db functions system of backup
-                add_or_update_track_info(track_id, audio_message.audio.file_id, SP11_CHANNEL_ID, audio_message.message_id) # after new db functions system of backup
-                # upload to s3
-                s3_key = f"{track_id}.mp3"
-                s3_client = boto3.client(
-                    's3',
-                    endpoint_url=S3_ENDPOINT,
-                    aws_access_key_id=S3_ACCESS_KEY,
-                    aws_secret_access_key=S3_SECRET_KEY
-                )
-                # Upload the actual audio file to S3
-                with open(audio_path, 'rb') as audio_file:
-                    s3_client.put_object(
-                        Bucket=S3_BUCKET_NAME,
-                        Key=s3_key,
-                        Body=audio_file,
-                        ContentType='audio/mpeg'
-                    )
-                audio.close()
-                thumb_image.close()
-                # now that it's uploaded, set s3 status to true in database
-                update_s3_status(track_id, 1)
-                
-                at_least_one_track_downloaded = True
+            # spotdl created no folder → same as no mp3
+            folder_set = set(folders)
+            for track_id in track_ids_list:
+                if track_id not in folder_set:
+                    queue_note("no_mp3", track_id=track_id, detail="no folder")
         except Exception as e:
             log(bot_name + "\nerror in processing downloaded tracks:\n" + str(e))
             return "errorInProcessingDownloadedTracks"

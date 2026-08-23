@@ -23,8 +23,15 @@ echo "Starting the script..."
 # get address of current script file (which is repository directory)
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
+# Deno on PATH so yt-dlp bestaudio (itag 251) works under proxychains (cron @reboot)
+export PATH="$SCRIPT_DIR/.venv/bin:/root/.deno/bin:$PATH"
+
 # Navigate to the script's directory
 cd "$SCRIPT_DIR"
+
+# Stale login env can still hold old /etc/environment values (dotenv override=False).
+# Unset bot-only keys so repo .env is used. Leave WARP_PROXIES (shared).
+unset SPOT_SEEK_BOT_API MUSIC_DATABASE_ID LOG_CHANNEL_ID SPOTIFY_APPS_LIST
 
 # Activate the virtual environment
 source "$SCRIPT_DIR/venv/bin/activate"

@@ -57,6 +57,13 @@ echo "Starting the server..."
 # Navigate to the script's directory
 cd "$SCRIPT_DIR"
 
+# Deno on PATH for yt-dlp JS runtime if this process ever downloads (cron @reboot)
+export PATH="$SCRIPT_DIR/.venv/bin:/root/.deno/bin:$PATH"
+
+# Stale login env can still hold old /etc/environment values (dotenv override=False).
+# Unset bot-only keys so repo .env is used. Leave WARP_PROXIES (shared).
+unset SPOT_SEEK_BOT_API MUSIC_DATABASE_ID LOG_CHANNEL_ID SPOTIFY_APPS_LIST
+
 # Activate the virtual environment
 source "$SCRIPT_DIR/venv/bin/activate"
 

@@ -2,6 +2,13 @@ import os
 import requests
 import json
 
+from dotenv import load_dotenv
+
+# Load repo-root .env (not cwd: queue handler may run from output/).
+# override=False so existing process env / /etc/environment still wins.
+_repo_dir = os.path.dirname(os.path.abspath(__file__))
+load_dotenv(os.path.join(_repo_dir, ".env"), override=False)
+
 import telebot
 from telebot.async_telebot import AsyncTeleBot
 
@@ -9,13 +16,17 @@ from telebot.async_telebot import AsyncTeleBot
 bot_api = os.environ["SPOT_SEEK_BOT_API"]
 database_channel = os.environ["MUSIC_DATABASE_ID"]
 
-# initialize bot
-bot = telebot.TeleBot(bot_api) # sync
-async_bot = AsyncTeleBot(bot_api) # async
+# initialize bot (2 instances for sync and async mode)
+bot = telebot.TeleBot(bot_api)
+async_bot = AsyncTeleBot(bot_api, parse_mode="Markdown", disable_web_page_preview=True)
 
 # bot name
 bot_name = "Spot Seek Bot"
 bot_username = "@SpotSeekBot"
+
+# todo: isn't best practice and can be optimized later.
+# to keep track of last query and debounce fast changes while user is still typing
+last_queries = {}
 
 # message for /start command
 welcome_message = '''Hi😃👋
@@ -75,7 +86,9 @@ spotify_user_link_message = '''You can't send user links.
 Send the link of your track/album/playlist from spotify'''
 
 
-successfull_end_message = '''Me:\n[Youtube](https://www.youtube.com/@Arashnm80) • [𝕏](https://x.com/Arashnm80) • [Github](https://github.com/arashnm80)'''
+# successfull_end_message = '''Me:\n[Youtube](https://www.youtube.com/@Arashnm80) • [𝕏](https://x.com/Arashnm80) • [Github](https://github.com/arashnm80)'''
+# successfull_end_message = '''end✅\n\nbot username might change. check @Arashnm80\\_Channel for the latest news.'''
+successfull_end_message = '''end✅\nsponsor: @DiamondAccountStore'''
 
 # successfull_end_message = '''If you liked the bot you can support me by giving a star [here](https://github.com/arashnm80/spot-seek-bot)⭐ (it's free)
 
@@ -106,10 +119,20 @@ starpal_promotion_msg = \
 directory = "./output/"
 
 # number of simultaneous downloads
-simultaneous_downloads = 8
+simultaneous_downloads = 1
 
 # timer to balance yt-dlp limit
 queue_handler_sleep_timer = 5
+
+# Album/playlist track-id cache so repeat links skip Spotify.
+# Playlists: owners can add/remove tracks; until TTL expires we may serve the old list.
+# Not a big deal — just remember new/removed songs can lag by up to playlist_cache_ttl.
+album_cache_ttl_seconds = 90 * 24 * 3600
+playlist_cache_ttl_seconds = 7 * 24 * 3600
+
+# Telegram log channel: one summary per this many download attempts, or this many seconds.
+queue_log_flush_tracks = 50
+queue_log_flush_seconds = 900
 
 # paths
 received_links_folder_path = "./received_links"
@@ -157,9 +180,26 @@ Join to get access to database, then send your link again.'''
 spotify_apps_list = os.environ["SPOTIFY_APPS_LIST"]
 spotify_apps_list = json.loads(spotify_apps_list)
 
-# spotdl
+# How the bot talks to Spotify for metadata (track/album/search/cover + playlist ids).
+# "official" — Web API client credentials (current). Playlist *contents* use SpotipyFree /
+#   api-partner because official GET /playlists/{id}/tracks is 403 by design (2026).
+# "anon" — previous SpotifyAnon web-player token path (official first, then Anon fallback).
+spotify_auth_mode = "official"
+
+# How spotdl finds a YouTube file. Stored on new rows as track_info.download_method.
+# Older rows stay NULL (unknown / pre-tag). "youtube" = ytsearch, not YouTube Music.
+spotdl_audio_provider = "youtube"
+
+# spotdl — in-repo pip venv (not /root/Temp, not GitHub ELF).
+# Proven 2026-08-20: spotdl 4.5.2 + yt-dlp 2026.08.19+ (see requirements-spotdl.txt).
 spotdl_cache_path = "/root/.spotdl"
-spotdl_executable_link = "https://github.com/spotDL/spotify-downloader/releases/download/v4.4.2/spotdl-4.4.2-linux"
+spotdl_venv_dir = os.path.join(_repo_dir, ".venv")
+spotdl_bin = os.path.join(spotdl_venv_dir, "bin", "spotdl")
+spotdl_requirements_file = os.path.join(_repo_dir, "requirements-spotdl.txt")
+# ELF bootstrap retired: frozen 4.4.3/4.5.2 403 even with -f 140. Unused.
+# spotdl_executable_link = "https://github.com/spotDL/spotify-downloader/releases/download/v4.4.3/spotdl-4.4.3-linux"
+spotdl_executable_link = None
+system_deno_dir = "/root/.deno/bin"
 
 # yt-dlp
 yt_dlp_cache_path = "/root/.cache/yt-dlp"
@@ -200,11 +240,37 @@ thank_you_keywords = [
 ]
 
 
-# fixme - credentials
 # list of socks5 proxies in this format:
 # "socks5://username:password@ip:port"
-socks_proxies = [
-
-]
+socks_proxies = json.loads(os.environ["SOCKS_PROXIES"])
 current_proxy_index = 0
 current_proxy = socks_proxies[current_proxy_index]
+
+
+# Storage layout (Telegram hides messages past ~1M per channel; catalog is ~2.2M):
+# - MUSIC_DATABASE_ID: original single DB channel (no longer written to).
+# - CHANNEL_IDS sp1–sp10: archive from backup.py (batches of 10, round-robin). ~220k each.
+# - SP11: current inbox for new queue downloads. When it nears 1M, add SP12 by hand.
+# Users are served from sqlite telegram_audio_id, not by browsing a channel.
+# S3 (hel1 object storage) was used during that backup, then deleted (cost). Do not upload.
+CHANNEL_IDS = json.loads(os.environ["CHANNEL_IDS"])
+SP11_CHANNEL_ID = int(os.environ["SP11_CHANNEL_ID"])
+
+# S3 — unused. Bucket deleted (cost). Keep credentials/code; do not put_object.
+S3_ENDPOINT = os.environ["S3_ENDPOINT"]
+S3_ACCESS_KEY = os.environ["S3_ACCESS_KEY"]
+S3_SECRET_KEY = os.environ["S3_SECRET_KEY"]
+S3_BUCKET_NAME = os.environ["S3_BUCKET_NAME"]
+
+# sftp configuration - for backup
+sftp_host = os.environ["SFTP_HOST"]
+sftp_port = int(os.environ.get("SFTP_PORT", "23"))
+sftp_username = os.environ["SFTP_USERNAME"]
+sftp_password = os.environ["SFTP_PASSWORD"]
+
+# webhook
+WEBHOOK_HOST = "https://spotseek.arashnm80.ir"  # your domain
+# WEBHOOK_PATH = f"/bot{bot_api}"  # unique path (avoid collisions)
+WEBHOOK_PATH = f"/bot"
+WEBHOOK_URL = f"{WEBHOOK_HOST}{WEBHOOK_PATH}"
+WEBHOOK_SECRET_TOKEN = os.environ["WEBHOOK_SECRET_TOKEN"]

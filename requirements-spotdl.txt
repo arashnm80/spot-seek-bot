@@ -1,0 +1,10 @@
+# In-repo downloader for queue_functions.py (Python import, not GitHub ELF).
+# Proven 2026-08-20: pip spotdl 4.5.2 + yt-dlp 2026.08.19+ with extras matching
+# the bot requirements.txt (default, curl-cffi). Frozen ELF 4.4.3/4.5.2 403s.
+#
+#   python3 -m venv .venv
+#   .venv/bin/pip install -U pip
+#   .venv/bin/pip install -r requirements-spotdl.txt
+#
+spotdl==4.5.2
+yt-dlp[default,curl-cffi]==2026.8.19

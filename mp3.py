@@ -1,7 +1,6 @@
 import subprocess
 from variables import directory
-from pydub import AudioSegment # to get song duration
-from mutagen.mp3 import MP3 # to get artist name
+from mutagen.mp3 import MP3 # duration, artist, title
 
 def change_cover_image(input_mp3, input_image, folder_path):
     output_file = 'output.mp3'
@@ -22,11 +21,9 @@ def change_cover_image(input_mp3, input_image, folder_path):
     subprocess.run(f"mv \"{output_file}\" \"{input_mp3}\"", shell=True, cwd=folder_path, timeout=300)
     print("new mp3 replaced old one")
 
-def get_track_duration(file): # todo: this function is not optimized and crashes on large files
-    audio_file = AudioSegment.from_file(file)
-    duration_in_ms = len(audio_file)
-    duration_in_sec = int(duration_in_ms / 1000)
-    return duration_in_sec
+def get_track_duration(file):
+    audio = MP3(file)
+    return int(audio.info.length)
 
 def get_artist_name_from_track(file):
     audio = MP3(file)

@@ -1,6 +1,7 @@
 # simple run:
 # python3 -m uvicorn spotseek:app --host 127.0.0.1 --port 3006
 
+
 from my_imports import *
 from bot_handlers import register_handlers
 
@@ -28,7 +29,11 @@ async def on_startup():
     await asyncio.sleep(5)
     await bot.remove_webhook()
     # Set new webhook
-    # drop_pending_updates=True to avoid accumulation on restart
     await asyncio.sleep(5)
-    await bot.set_webhook(WEBHOOK_URL, drop_pending_updates=True)
+    await bot.set_webhook(
+        url=WEBHOOK_URL,
+        max_connections=100,
+        drop_pending_updates=False,
+        secret_token=WEBHOOK_SECRET_TOKEN
+    )
     print("Webhook set to:", WEBHOOK_URL)

@@ -1,5 +1,8 @@
 # telegram spotify downloader bot: [@SpotSeekBot](https://t.me/SpotSeekBot)
-**This project is for personal learning, do not use it for illegal purposes. Artists can send their copyright claims to the developer. All rights remain to rightful copyright owners.**
+
+**This project is intended for personal use only. Please do not use it for illegal purposes or in a production environment.**
+
+Users are responsible for their actions and potential legal consequences. We do not support unauthorized downloading of copyrighted material and take no responsibility for user actions. Artists can send their copyright claims to the developer.
 
 ## how to use as the client
 Send bot a link from spotify and it'll download it for you.
@@ -106,7 +109,10 @@ add this text to crontab (change with the path you've cloned repository):
 Sandbox research (2026-08-20) and production wiring: [docs/yt-dlp-proxychains-research.md](docs/yt-dlp-proxychains-research.md).
 
 ## disclaimer
-**This project is for personal learning, do not use it for illegal purposes. Artists can send their copyright claims to the developer. All rights remain to rightful copyright owners.**
+
+**This project is intended for personal use only. Please do not use it for illegal purposes or in a production environment.**
+
+Users are responsible for their actions and potential legal consequences. We do not support unauthorized downloading of copyrighted material and take no responsibility for user actions. Artists can send their copyright claims to the developer.
 
 ## support and donate
 ### Give me energy with coffee:

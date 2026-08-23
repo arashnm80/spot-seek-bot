@@ -44,17 +44,20 @@ pip install -r requirements.txt
 - make scripts that run the bot executable:
 - `music.db`:
   - create it from scratch via `create_database()` or use the saved one from before
+  - weekly Git LFS snapshot: `backup_db_to_github.sh` (set `DB_BACKUP_REPO` in `.env` to a local clone of your private backup repo; uses sqlite `.backup`, not `cp`)
 ```
-chmod +x restart_spotseek.sh restart_spotseek_queue_handler.sh
+chmod +x restart_spotseek.sh restart_spotseek_queue_handler.sh backup_db_to_github.sh
 ```
 add this text to crontab (change with the path you've cloned repository):
 ```
 # spotseek
 ## run main scripts on reboot
-@reboot /root/Storage/spot-seek-bot/restart_spotseek.sh
-@reboot /root/Storage/spot-seek-bot/restart_spotseek_queue_handler.sh
+@reboot /path/to/spot-seek-bot/restart_spotseek.sh
+@reboot /path/to/spot-seek-bot/restart_spotseek_queue_handler.sh
 ## temp solution to reset every hour to free up memory
-0 * * * * /root/Storage/spot-seek-bot/restart_spotseek.sh
+0 * * * * /path/to/spot-seek-bot/restart_spotseek.sh
+## weekly sqlite backup to private github (Sunday 03:00 UTC)
+0 3 * * 0 /path/to/spot-seek-bot/backup_db_to_github.sh
 ```
 - reboot once to affect
 

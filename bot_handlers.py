@@ -1,6 +1,117 @@
 from my_imports import *
 from queue_functions import *
 
+
+def _tg_button_text(text, limit=64):
+    text = text or ""
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3] + "..."
+
+
+def _search_caption(query, kind, result_count):
+    noun = "tracks" if kind == "track" else "albums"
+    if result_count:
+        return f'Search: {query}\n\nRelated {noun}:'
+    return (
+        f"Search: {query}\n\n"
+        f"No matching {noun}. Try the other tab, or send a Spotify link."
+    )
+
+
+def _search_results_markup(kind, items):
+    markup = types.InlineKeyboardMarkup()
+    tracks_label = "🎵 Tracks ✓" if kind == "track" else "🎵 Tracks"
+    albums_label = "💿 Albums ✓" if kind == "album" else "💿 Albums"
+    markup.row(
+        types.InlineKeyboardButton(text=tracks_label, callback_data="sm_t"),
+        types.InlineKeyboardButton(text=albums_label, callback_data="sm_a"),
+    )
+    prefix = "track_" if kind == "track" else "album_"
+    for item in items:
+        label = f"{item.get('artist') or ''} - {item.get('name') or ''}".strip(" -")
+        markup.add(
+            types.InlineKeyboardButton(
+                text=_tg_button_text(label),
+                callback_data=f"{prefix}{item['id']}",
+            )
+        )
+    return markup
+
+
+async def fulfill_track_ids(
+    bot,
+    chat_id,
+    matches,
+    *,
+    user_id,
+    is_premium=False,
+    language_code=None,
+    reply_to_message_id=None,
+):
+    """Send cached audio in packs of 10, enqueue the rest, then an end summary."""
+    pending = list(matches)
+    tracks_to_download = []
+    total_tracks = len(pending)
+    available_tracks = 0
+    media_group = []
+    while pending:
+        track_id = pending.pop(0)
+        telegram_audio_id = get_telegram_audio_id(track_id)
+        if telegram_audio_id is not None:
+            media_group.append(types.InputMediaAudio(media=telegram_audio_id, caption=bot_username))
+            available_tracks += 1
+        else:
+            tracks_to_download.append(track_id)
+            track_link = f"https://open.spotify.com/track/{track_id}"
+            await do_with_retry(
+                bot.send_message,
+                chat_id,
+                f"track [{track_id}]({track_link}) is not available yet, try again for it later.",
+                disable_notification=True,
+                parse_mode="Markdown",
+            )
+            await asyncio.sleep(1)
+
+        if len(media_group) == 10 or (len(media_group) > 0 and not pending):
+            if len(media_group) == 1:
+                await do_with_retry(
+                    bot.send_audio,
+                    chat_id,
+                    media_group[0].media,
+                    caption=bot_username,
+                    disable_notification=True,
+                )
+                print(f"single audio sent to user {chat_id}")
+            else:
+                await do_with_retry(
+                    bot.send_media_group,
+                    chat_id,
+                    media_group,
+                    disable_notification=True,
+                )
+                print(f"media group sent to user {chat_id}")
+            media_group = []
+            await asyncio.sleep(1)
+
+    if tracks_to_download:
+        enqueue_tracks(chat_id, tracks_to_download)
+
+    if available_tracks == 0:
+        end_message = "end💔."
+        record_request_outcome(user_id, False)
+    elif available_tracks < total_tracks:
+        end_message = f"{available_tracks} of {total_tracks} done✅."
+        record_request_outcome(user_id, False)
+    else:
+        end_message = successfull_end_message
+        record_request_outcome(user_id, True)
+    kwargs = {}
+    if reply_to_message_id is not None:
+        kwargs["reply_parameters"] = ReplyParameters(message_id=reply_to_message_id)
+    await bot.send_message(chat_id, end_message, **kwargs)
+
+
 def register_handlers(bot):
     '''
     register all bot handlers
@@ -204,84 +315,16 @@ def register_handlers(bot):
                 log(bot_name + " log:\n0️⃣ Zero tracks error from user: " + str(message.chat.id))
                 return
 
-            # if files are already in database bypass the queue handler system (can be optimized later. currently there are duplicate codes in handler and here)
-            tracks_to_download = []
-            total_tracks = len(matches)
-            available_tracks = 0
-            media_group = []
-            while matches:
-                track_id = matches.pop(0) # remove the track from list and store it in track_id
-                telegram_audio_id = get_telegram_audio_id(track_id) # old sqlite method
-                # telegram_audio_id = get_telegram_audio_id_cached(track_id) # temporary new redis method
-                if telegram_audio_id is not None:
-                    media_group.append(types.InputMediaAudio(media=telegram_audio_id, caption=bot_username))
-                    available_tracks += 1
-                else:
-                    tracks_to_download.append(track_id)
-                    # send notification for unavailable tracks
-                    # todo: get_track_info_from_track_id has too many requests and leads to rate limit
-                    #       for now just send the message with track link. for long term, add cache for track names.
-                    # track_name = get_track_info_from_track_id(track_id)
-                    track_link = f"https://open.spotify.com/track/{track_id}"
-                    await do_with_retry(
-                        bot.send_message,
-                        message.chat.id,
-                        f"track [{track_id}]({track_link}) is not available yet, try again for it later.",
-                        disable_notification=True,
-                        parse_mode="Markdown"
-                    )
-                    await asyncio.sleep(1)
-
-                # send media group if they become 10 or they are remaining for last pack
-                if len(media_group) == 10 or (len(media_group) > 0 and not matches):
-                    # try:
-                    if len(media_group) == 1: # there is only one track
-                        await do_with_retry(
-                            bot.send_audio,
-                            message.chat.id,
-                            media_group[0].media,
-                            caption=bot_username,
-                            disable_notification=True
-                        )
-                        print(f"single audio sent to user {message.chat.id}")
-                    else: # there are at least 2 tracks
-                        await do_with_retry(
-                            bot.send_media_group,
-                            message.chat.id,
-                            media_group,
-                            disable_notification=True
-                        )
-                        print(f"media group sent to user {message.chat.id}")
-
-                    # empty the media group
-                    media_group = []
-                    await asyncio.sleep(1)
-
-            # add unavailable tracks to queue (if there are any)
-            if tracks_to_download:
-                enqueue_tracks(message.chat.id, tracks_to_download)
-
-            # no tracks left for queue handler
-            if not matches:
-                if available_tracks == 0:
-                    end_message = f"end💔."
-                    record_request_outcome(user_id, False)
-                elif available_tracks < total_tracks:
-                    end_message = f"{available_tracks} of {total_tracks} done✅."
-                    record_request_outcome(user_id, False)
-                else:
-                    end_message = successfull_end_message
-                    record_request_outcome(user_id, True)
-                    # starpal promotion or ask for boost
-                    if message.from_user.language_code == "fa":
-                        # end_message = starpal_promotion_msg
-                        # log(f"{bot_username} log:\n\nuser: {message.chat.id}\n\n⭐️ starpal promotion for iranian user")
-                        pass
-                    elif is_premium:
-                        # await bot.send_message(message.chat.id, "I noticed you have Telegram Premium. Can you give me a few boosts?🙃\nhttps://t.me/boost/Arashnm80\_Persian", disable_web_page_preview=True)
-                        pass
-                await bot.send_message(message.chat.id, end_message, reply_parameters=ReplyParameters(message_id=message.message_id))
-                return
+            await fulfill_track_ids(
+                bot,
+                message.chat.id,
+                matches,
+                user_id=user_id,
+                is_premium=is_premium,
+                language_code=message.from_user.language_code,
+                reply_to_message_id=message.message_id,
+            )
+            return
 
         except Exception as e:
             log(bot_name + " log:\n🛑 A general error occurred: " + str(e))
@@ -314,28 +357,13 @@ def register_handlers(bot):
                 message.from_user.is_premium if message.from_user.is_premium is not None else False,
             )
             query = message.text
-            results = search_track_ids(query)
-
-            if not results:
-                await bot.send_message(
-                    message.chat.id,
-                    "No matching tracks in the bot yet. Send a Spotify link to download it.",
-                )
-                return
-
-            # Telegram button labels max out at 64 characters
-            markup = types.InlineKeyboardMarkup()
-            for track in results:
-                label = f"{track['artist']} - {track['name']}"
-                if len(label) > 64:
-                    label = label[:61] + "..."
-                btn = types.InlineKeyboardButton(
-                    text=label,
-                    callback_data=f"track_{track['id']}"
-                )
-                markup.add(btn)
-            
-            await bot.send_message(message.chat.id, "Related tracks for your search:", reply_markup=markup)
+            results = search_spotify_items(query, kind="track")
+            sent = await bot.send_message(
+                message.chat.id,
+                _search_caption(query, "track", len(results)),
+                reply_markup=_search_results_markup("track", results),
+            )
+            last_chat_searches[(sent.chat.id, sent.message_id)] = query
         except Exception as e:
             log_exception("error in handle_search", e)
             try:
@@ -343,9 +371,63 @@ def register_handlers(bot):
             except Exception:
                 return
 
+    @bot.callback_query_handler(func=lambda call: call.data in ("sm_t", "sm_a"))
+    async def handle_search_mode(call):
+        kind = "album" if call.data == "sm_a" else "track"
+        query = last_chat_searches.get((call.message.chat.id, call.message.message_id))
+        if not query:
+            await bot.answer_callback_query(call.id, "Search again — this result is too old.")
+            return
+        try:
+            results = search_spotify_items(query, kind=kind)
+            await bot.edit_message_text(
+                _search_caption(query, kind, len(results)),
+                call.message.chat.id,
+                call.message.message_id,
+                reply_markup=_search_results_markup(kind, results),
+            )
+            await bot.answer_callback_query(call.id)
+        except Exception as e:
+            if "message is not modified" in str(e).lower():
+                await bot.answer_callback_query(call.id)
+                return
+            log_exception("error in search mode switch", e)
+            await bot.answer_callback_query(call.id, "Search failed. Try again.")
+
+    @bot.callback_query_handler(func=lambda call: call.data.startswith("album_"))
+    async def handle_album_selection(call):
+        album_id = call.data.split("_", 1)[1]
+        await bot.answer_callback_query(call.id, "Opening album…")
+        try:
+            matches = get_track_ids(f"https://open.spotify.com/album/{album_id}")
+        except Exception as e:
+            log_exception("error fetching album from search", e)
+            await bot.send_message(call.message.chat.id, unsuccessful_process_message)
+            return
+        if not matches:
+            await bot.send_message(call.message.chat.id, "sorry I couldn't extract tracks from that album.")
+            return
+        if len(matches) > 1000:
+            await bot.send_message(call.message.chat.id, more_than_1000_tracks_message)
+            return
+        user = call.from_user
+        is_premium = user.is_premium if user.is_premium is not None else False
+        try:
+            await fulfill_track_ids(
+                bot,
+                call.message.chat.id,
+                matches,
+                user_id=user.id,
+                is_premium=is_premium,
+                language_code=user.language_code,
+            )
+        except Exception as e:
+            log_exception("error delivering album from search", e)
+            await bot.send_message(call.message.chat.id, unsuccessful_process_message)
+
     @bot.callback_query_handler(func=lambda call: call.data.startswith("track_"))
     async def handle_track_selection(call):
-        track_id = call.data.split("_")[1]
+        track_id = call.data.split("_", 1)[1]
         telegram_audio_id = get_telegram_audio_id(track_id)
         if telegram_audio_id is None:
             enqueue_tracks(call.message.chat.id, [track_id])

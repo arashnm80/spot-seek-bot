@@ -211,10 +211,12 @@ def _search_items_via_partner(query, limit):
     return items[:limit]
 
 
-def _search_items_via_official(query, limit):
+def _search_items_via_official(query, limit, search_type="track"):
     sp = create_spotipy_instance(auth_manager=_spotipy_auth_manager())
-    results = sp.search(q=query, type="track", limit=min(limit, 10))
-    return (results.get("tracks") or {}).get("items") or []
+    api_limit = min(limit, 10 if search_type == "track" else 20)
+    results = sp.search(q=query, type=search_type, limit=api_limit)
+    bucket = "tracks" if search_type == "track" else "albums"
+    return (results.get(bucket) or {}).get("items") or []
 
 
 def _query_matches(query, name, artist):
@@ -255,15 +257,89 @@ def _search_spotify_hits(query, limit):
         except Exception as e:
             log(f"SpotipyFree search failed, trying official:\n{e}")
     if not items:
-        items = _search_items_via_official(query, limit)
+        items = _search_items_via_official(query, limit, search_type="track")
     return _parse_search_hits(items)
 
 
-def search_track_ids(query, require_in_db=False):
-    """Spotify search. Chat search can include not-yet-downloaded tracks; inline cannot."""
-    limit = 40
+def _parse_album_hits(items):
+    parsed = []
+    seen = set()
+    for album in items:
+        album_id = album.get("id")
+        if not album_id or album_id in seen:
+            continue
+        seen.add(album_id)
+        name = album.get("name") or ""
+        artist = _artist_name(album)
+        parsed.append({
+            "id": album_id,
+            "name": name,
+            "artist": artist,
+            "url": (album.get("external_urls") or {}).get("spotify")
+            or f"https://open.spotify.com/album/{album_id}",
+            "total_tracks": album.get("total_tracks") or 0,
+        })
+    return parsed
+
+
+def _album_from_track(track):
+    album = track.get("album")
+    if not isinstance(album, dict):
+        return None
+    album_id = album.get("id")
+    if not album_id:
+        uri = album.get("uri") or ""
+        if "album:" in uri:
+            album_id = uri.split("album:")[-1]
+    if not album_id:
+        return None
+    return {
+        "id": album_id,
+        "name": album.get("name") or "",
+        "artists": album.get("artists") or track.get("artists") or [],
+        "external_urls": album.get("external_urls") or {},
+        "total_tracks": album.get("total_tracks") or 0,
+    }
+
+
+def _search_album_hits(query, limit):
+    try:
+        items = _search_items_via_official(query, limit, search_type="album")
+        parsed = _parse_album_hits(items)
+        if parsed:
+            return parsed
+    except Exception as e:
+        log(f"official album search failed, trying albums from tracks:\n{e}")
+    raw_tracks = []
+    if spotify_auth_mode != "anon":
+        try:
+            raw_tracks = _search_items_via_partner(query, 40)
+        except Exception:
+            raw_tracks = []
+    if not raw_tracks:
+        raw_tracks = _search_items_via_official(query, 40, search_type="track")
+    albums = [_album_from_track(t) for t in raw_tracks]
+    return _parse_album_hits([a for a in albums if a])[:limit]
+
+
+def _search_cache_age_label(age):
+    if age < 3600:
+        return f"cache ({age // 60}m old)"
+    if age < 86400:
+        return f"cache ({age // 3600}h old)"
+    return f"cache ({age // 86400}d old)"
+
+
+def search_spotify_items(query, kind="track", require_in_db=False):
+    """Spotify search. kind is track or album. Inline track search must set require_in_db."""
+    kind = "album" if kind == "album" else "track"
+    limit = 40 if kind == "track" else 20
     query_key = normalize_search_query(query)
-    cached = get_cached_search_results(query_key) if query_key else None
+    cache_key = f"{kind}:{query_key}" if query_key else None
+    cached = get_cached_search_results(cache_key) if cache_key else None
+    # Older track cache rows were stored without a kind prefix.
+    if cached is None and kind == "track" and query_key:
+        cached = get_cached_search_results(query_key)
     parsed = None
     source = "spotify"
 
@@ -271,40 +347,45 @@ def search_track_ids(query, require_in_db=False):
         hits, age = cached
         if age <= search_cache_ttl_seconds and hits:
             parsed = [dict(t) for t in hits]
-            if age < 3600:
-                source = f"cache ({age // 60}m old)"
-            elif age < 86400:
-                source = f"cache ({age // 3600}h old)"
-            else:
-                source = f"cache ({age // 86400}d old)"
+            source = _search_cache_age_label(age)
 
     if parsed is None:
         try:
-            parsed = _search_spotify_hits(query, limit)
-            if parsed:
-                save_cached_search_results(query_key, parsed)
+            if kind == "album":
+                parsed = _search_album_hits(query, limit)
+            else:
+                parsed = _search_spotify_hits(query, limit)
+            if parsed and cache_key:
+                save_cached_search_results(cache_key, parsed)
         except Exception as e:
             if cached and cached[0]:
                 parsed = [dict(t) for t in cached[0]]
                 source = f"stale cache after search error: {e}"
-                log(f"search {query!r} failed, using stale cache:\n{e}")
+                log(f"{kind} search {query!r} failed, using stale cache:\n{e}")
             else:
                 raise
 
-    for track in parsed:
-        track["telegram_audio_id"] = get_telegram_audio_id(track["id"])
+    if kind == "track":
+        for track in parsed:
+            track["telegram_audio_id"] = get_telegram_audio_id(track["id"])
 
     relevant = [t for t in parsed if _query_matches(query, t["name"], t["artist"])]
     pool = relevant if relevant else parsed
     if require_in_db:
         pool = [t for t in pool if t.get("telegram_audio_id")]
     out = pool[:10]
-    in_db = sum(1 for t in out if t.get("telegram_audio_id"))
+    in_db = sum(1 for t in out if t.get("telegram_audio_id")) if kind == "track" else 0
+    extra = f", {in_db}/{len(out)} in db" if kind == "track" else ""
     log(
-        f"search {query!r}: {len(parsed)} hits via {source}, "
-        f"{len(relevant)} relevant, {in_db}/{len(out)} in db"
+        f"{kind} search {query!r}: {len(parsed)} hits via {source}, "
+        f"{len(relevant)} relevant, {len(out)} shown{extra}"
     )
     return out
+
+
+def search_track_ids(query, require_in_db=False):
+    """Spotify track search. Chat search can include not-yet-downloaded tracks; inline cannot."""
+    return search_spotify_items(query, kind="track", require_in_db=require_in_db)
 
 def get_track_info_from_track_id(track_id):
     '''return "{artist} - {name}" from track id'''

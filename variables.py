@@ -27,12 +27,15 @@ bot_username = "@SpotSeekBot"
 # todo: isn't best practice and can be optimized later.
 # to keep track of last query and debounce fast changes while user is still typing
 last_queries = {}
+# chat search results message -> original query (Tracks/Albums toggle)
+last_chat_searches = {}
 
 # message for /start command
 welcome_message = '''Hi😃👋
 
-You can search for a song name by typing its name. for example try this:
+You can search for a song or album by typing its name. for example try this:
 `Adele - Someone Like You`
+Then switch between Tracks and Albums on the results.
 
 
 Or you can send me a spotify link like these👇

@@ -23,14 +23,10 @@ $ sudo apt-get upgrade
   - `warp`: I got it as a side feature by installing [MHSanaei 3x-ui](https://github.com/MHSanaei/3x-ui). You might be able to install it via [fscarmen warp](https://github.com/fscarmen/warp) too.
   - install it via `sudo apt-get install proxychains4`
   - set warp proxy in `/etc/proxychains4.conf`
-- set required environment variables in a file like `/etc/environment/` (affects on reboot):
-  - `SPOT_SEEK_BOT_API` - main api key of telegram bot
-  - `MUSIC_DATABASE_ID` - private music database channel which bot is its admin
-  - `LOG_CHANNEL_ID` - private log channel which bot is its admin
+- copy `.env.example` to `.env` in the repo root and fill in secrets (see `.env.example` for key names). `variables.py` loads that file at import time; existing process environment is not overridden.
 - set required variables in `variables.py` file:
   - `promote_channel_username` - set to a channel that bot promotes and is its admin (begining with `@`)
   - `warp_mode` - set to `False` if you don't have warp socks proxy
-  - `spotify_apps_list` - a list of spotify app ids and secrets, obtainable from [developer.spotify.com](https://developer.spotify.com/)
 - install `pip`:
 ```
 apt install python3-pip
@@ -106,6 +102,8 @@ add this text to crontab (change with the path you've cloned repository):
 
 ## errors
 `YT-DLP`: probabely the ip is banned by youtube. change it to another.
+
+Sandbox research (2026-08-20) and production wiring: [docs/yt-dlp-proxychains-research.md](docs/yt-dlp-proxychains-research.md).
 
 ## disclaimer
 **This project is for personal learning, do not use it for illegal purposes. Artists can send their copyright claims to the developer. All rights remain to rightful copyright owners.**

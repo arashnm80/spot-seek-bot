@@ -3,7 +3,11 @@ output/
 __pycache__/
 received_links/
 venv/
+.venv/
 .vscode/
+
+# secrets (keep .env.example tracked)
+.env
 
 # ignored files
 music.db
@@ -13,6 +17,7 @@ nohup.out
 spotseek.sh
 test.py
 test2.py
+test.txt
 backup.log
 backup_nohup.log
 developer_account.session

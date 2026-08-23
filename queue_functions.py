@@ -49,11 +49,27 @@ def read_list_from_file(file_path):
     return lines
 
 
-def download_tracks(track_ids_list):
+def download_tracks(track_ids_list, request_counts=None):
     try:
         global current_proxy_index
         global queue_handler_sleep_timer
-        log(f"sleep timer: {queue_handler_sleep_timer}")
+        request_counts = request_counts or {}
+
+        def repeats_of(track_id):
+            return request_counts.get(track_id, 1)
+
+        def note(kind, track_id=None, n=1, detail=None):
+            times = repeats_of(track_id) if track_id else None
+            queue_note(kind, n=n, track_id=track_id, detail=detail, repeats=times)
+            if track_id and kind in ("ok", "no_mp3", "too_big", "error", "spotdl_fail", "skipped_in_db"):
+                dropped = remove_track_from_all_queues(track_id)
+                if kind != "ok" and kind != "skipped_in_db":
+                    log(f"dropped {track_id} from {dropped} queue rows after {kind}")
+
+        log(
+            f"sleep timer: {queue_handler_sleep_timer}\n"
+            f"queue: {queue_depth_label()}"
+        )
         time.sleep(queue_handler_sleep_timer)  # small delay between batches for yt-dlp
 
         # Keep ~/.spotdl and yt-dlp caches. Wiping them forced a 5s secrets timeout
@@ -68,8 +84,8 @@ def download_tracks(track_ids_list):
 
             # if item exists in db
             if telegram_audio_id is not None:
-                log(f"track {track_id} exists in db now. skip.")
-                queue_note("skipped_in_db", track_id=track_id)
+                log(f"track {track_id} ×{repeats_of(track_id)} exists in db now. skip. | queue: {queue_depth_label()}")
+                note("skipped_in_db", track_id=track_id)
                 track_ids_list.remove(track_id)
 
         # if list became empty
@@ -77,7 +93,10 @@ def download_tracks(track_ids_list):
             log("all tracks already exist in db. skip.")
             return "allTracksExistInDb"
 
-        log(f"current_proxy_index: {current_proxy_index}\n\ntracks to download:\n\n{"\n".join(track_ids_list)}")
+        track_lines = "\n".join(
+            f"×{repeats_of(track_id)}  {track_id}" for track_id in track_ids_list
+        )
+        log(f"current_proxy_index: {current_proxy_index}\n\nqueue: {queue_depth_label()}\n\ntracks to download:\n\n{track_lines}")
 
         # Kill any existing spotdl processes before starting a new download
         try:
@@ -123,7 +142,8 @@ def download_tracks(track_ids_list):
             )
         except Exception as e:
             log(bot_name + " error in spotdl download")
-            queue_note("spotdl_fail", n=len(track_ids_list), detail="spotdl exception")
+            for track_id in track_ids_list:
+                note("spotdl_fail", track_id=track_id, detail="spotdl exception")
             return "errorInSpotdlDownload"
 
         at_least_one_track_downloaded = False # sometimes jumps to next pack without downloading anything and giving any error
@@ -160,10 +180,10 @@ def download_tracks(track_ids_list):
                     try:
                         mp3_file = get_single_mp3(track_folder_path)
                     except Exception as e:
-                        log(bot_name + f" log:\n\ncurrent_proxy_index: {current_proxy_index}\nsleep_timer: {queue_handler_sleep_timer}\n\n🛑 error in get_single_mp3() for track:\n" + track_id +"\n\nerror:\n" + str(e))
-                        queue_note("no_mp3", track_id=track_id, detail="no mp3")
+                        log(bot_name + f" log:\n\ncurrent_proxy_index: {current_proxy_index}\nsleep_timer: {queue_handler_sleep_timer}\n\n🛑 error in get_single_mp3() for track:\n" + track_id + f" ×{repeats_of(track_id)}\n\nerror:\n" + str(e) + f"\nqueue: {queue_depth_label()}")
+                        note("no_mp3", track_id=track_id, detail="no mp3")
                         continue
-                    log(f"current_proxy_index: {current_proxy_index}\n\n🔵 there is a downloaded mp3 file:\n{mp3_file}")
+                    log(f"current_proxy_index: {current_proxy_index}\n\n🔵 downloaded ×{repeats_of(track_id)}  {track_id}\n{mp3_file}\nqueue: {queue_depth_label()}")
                     # change cover image
                     change_cover_image(mp3_file, "cover.jpg", track_folder_path)
                     # check file size because of telegram 50MB limit
@@ -171,8 +191,8 @@ def download_tracks(track_ids_list):
                     audio = open(audio_path, 'rb')
                     file_size = os.fstat(audio.fileno()).st_size
                     if file_size > 50_000_000:
-                        log(bot_name + " log:\n🛑 too big mp3 file error")
-                        queue_note("too_big", track_id=track_id, detail="too big")
+                        log(bot_name + f" log:\n🛑 too big mp3 file error ×{repeats_of(track_id)}  {track_id}\nqueue: {queue_depth_label()}")
+                        note("too_big", track_id=track_id, detail="too big")
                         audio.close()
                         continue
                     # get track metadata to be shown in telegram
@@ -201,16 +221,17 @@ def download_tracks(track_ids_list):
                     audio.close()
                     thumb_image.close()
                     at_least_one_track_downloaded = True
-                    queue_note("ok", track_id=track_id)
+                    note("ok", track_id=track_id)
                 except Exception as e:
-                    log(bot_name + f"\nerror processing track {track_id}:\n" + str(e))
-                    queue_note("error", track_id=track_id, detail=str(e)[:80])
+                    log(bot_name + f"\nerror processing track {track_id} ×{repeats_of(track_id)}:\n" + str(e) + f"\nqueue: {queue_depth_label()}")
+                    note("error", track_id=track_id, detail=str(e)[:80])
                     continue
             # spotdl created no folder → same as no mp3
             folder_set = set(folders)
             for track_id in track_ids_list:
                 if track_id not in folder_set:
-                    queue_note("no_mp3", track_id=track_id, detail="no folder")
+                    log(f"no folder for {track_id} ×{repeats_of(track_id)} | queue: {queue_depth_label()}")
+                    note("no_mp3", track_id=track_id, detail="no folder")
         except Exception as e:
             log(bot_name + "\nerror in processing downloaded tracks:\n" + str(e))
             return "errorInProcessingDownloadedTracks"

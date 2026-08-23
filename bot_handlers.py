@@ -9,6 +9,12 @@ def register_handlers(bot):
     @bot.message_handler(commands = ['start'])
     async def start_message_handler(message):
         await bot.send_message(message.chat.id, welcome_message)
+        add_or_update_user(
+            message.from_user.id,
+            message.from_user.username,
+            message.from_user.language_code,
+            message.from_user.is_premium if message.from_user.is_premium is not None else False,
+        )
         log(bot_name + " log:\n📥 /start command sent from user: " + str(message.chat.id))
 
     @bot.message_handler(commands = ['info'])
@@ -72,6 +78,12 @@ def register_handlers(bot):
         
         # Store the current query
         last_queries[inline_query.from_user.id] = inline_query.query
+        add_or_update_user(
+            inline_query.from_user.id,
+            inline_query.from_user.username,
+            inline_query.from_user.language_code,
+            inline_query.from_user.is_premium if inline_query.from_user.is_premium is not None else False,
+        )
         # Wait briefly to see if the user keeps typing
         await asyncio.sleep(1)
         # If user typed something new during the wait, skip this request
@@ -79,7 +91,12 @@ def register_handlers(bot):
             return
 
         # search and find tracks from spotify. then check our local db
-        tracks = search_track_ids(inline_query.query)
+        try:
+            tracks = search_track_ids(inline_query.query, require_in_db=True)
+        except Exception as e:
+            log_exception("error in inline search", e)
+            await bot.answer_inline_query(inline_query.id, [])
+            return
 
         results = [
             InlineQueryResultCachedAudio(
@@ -120,29 +137,39 @@ def register_handlers(bot):
             # reaction = [ReactionTypeEmoji(emoji='👍')]
             # await bot.set_message_reaction(message.chat.id, message.message_id, reaction)
 
-            # check if user is a member of the channel
-            chat_member = await bot.get_chat_member(promote_channel_username, message.chat.id)
-            allowed_types = (
-                telebot.types.ChatMemberOwner,
-                telebot.types.ChatMemberAdministrator,
-                telebot.types.ChatMemberMember
-            )
-            if isinstance(chat_member, allowed_types):
-                log(beginning_log_text + "\n\n👥member of channel: ✅")
-            else:
-                log(beginning_log_text + "\n\n👥member of channel: ❌")
-                # Send message with join button to user
-                keyboard = types.InlineKeyboardMarkup()
-                channel_button = types.InlineKeyboardButton(text='Join', url=promote_channel_link)
-                keyboard.add(channel_button)
-                await bot.send_message(
-                    message.chat.id,
-                    not_subscribed_to_channel_message,
-                    parse_mode="Markdown",
-                    disable_web_page_preview=True,
-                    reply_markup=keyboard
+            # New users can try the bot freely. After a streak of fully
+            # successful requests, require joining the promo channel.
+            if user_should_join_channel(user_id):
+                chat_member = await bot.get_chat_member(promote_channel_username, message.chat.id)
+                allowed_types = (
+                    telebot.types.ChatMemberOwner,
+                    telebot.types.ChatMemberAdministrator,
+                    telebot.types.ChatMemberMember
                 )
-                return
+                if isinstance(chat_member, allowed_types):
+                    log(beginning_log_text + "\n\n👥member of channel: ✅")
+                else:
+                    log(
+                        beginning_log_text
+                        + f"\n\n👥member of channel: ❌ (streak {get_consecutive_successes(user_id)})"
+                    )
+                    keyboard = types.InlineKeyboardMarkup()
+                    channel_button = types.InlineKeyboardButton(text='Join', url=promote_channel_link)
+                    keyboard.add(channel_button)
+                    await bot.send_message(
+                        message.chat.id,
+                        not_subscribed_to_channel_message,
+                        parse_mode="Markdown",
+                        disable_web_page_preview=True,
+                        reply_markup=keyboard
+                    )
+                    return
+            else:
+                log(
+                    beginning_log_text
+                    + f"\n\n👥join gate skipped (streak {get_consecutive_successes(user_id)}"
+                    + f"/{promote_channel_join_after_successes})"
+                )
 
             valid_spotify_links_in_user_text = get_valid_spotify_links(message.text)
 
@@ -232,16 +259,19 @@ def register_handlers(bot):
 
             # add unavailable tracks to queue (if there are any)
             if tracks_to_download:
-                append_list_to_file(tracks_to_download, received_links_folder_path + "/" + str(message.chat.id))
+                enqueue_tracks(message.chat.id, tracks_to_download)
 
             # no tracks left for queue handler
             if not matches:
                 if available_tracks == 0:
                     end_message = f"end💔."
+                    record_request_outcome(user_id, False)
                 elif available_tracks < total_tracks:
                     end_message = f"{available_tracks} of {total_tracks} done✅."
+                    record_request_outcome(user_id, False)
                 else:
                     end_message = successfull_end_message
+                    record_request_outcome(user_id, True)
                     # starpal promotion or ask for boost
                     if message.from_user.language_code == "fa":
                         # end_message = starpal_promotion_msg
@@ -277,30 +307,56 @@ def register_handlers(bot):
             f"contents: {message.text}"
         )
         try:
+            add_or_update_user(
+                message.from_user.id,
+                message.from_user.username,
+                message.from_user.language_code,
+                message.from_user.is_premium if message.from_user.is_premium is not None else False,
+            )
             query = message.text
             results = search_track_ids(query)
 
             if not results:
-                await bot.send_message(message.chat.id, "No tracks found for your search.")
+                await bot.send_message(
+                    message.chat.id,
+                    "No matching tracks in the bot yet. Send a Spotify link to download it.",
+                )
                 return
 
-            # create inline buttons
+            # Telegram button labels max out at 64 characters
             markup = types.InlineKeyboardMarkup()
             for track in results:
+                label = f"{track['artist']} - {track['name']}"
+                if len(label) > 64:
+                    label = label[:61] + "..."
                 btn = types.InlineKeyboardButton(
-                    text=f"{track['artist']} - {track['name']}", 
+                    text=label,
                     callback_data=f"track_{track['id']}"
                 )
                 markup.add(btn)
             
             await bot.send_message(message.chat.id, "Related tracks for your search:", reply_markup=markup)
         except Exception as e:
-            log("error in handle_search: " + str(e))
+            log_exception("error in handle_search", e)
+            try:
+                await bot.send_message(message.chat.id, unsuccessful_process_message)
+            except Exception:
+                return
 
     @bot.callback_query_handler(func=lambda call: call.data.startswith("track_"))
     async def handle_track_selection(call):
         track_id = call.data.split("_")[1]
         telegram_audio_id = get_telegram_audio_id(track_id)
+        if telegram_audio_id is None:
+            enqueue_tracks(call.message.chat.id, [track_id])
+            await bot.answer_callback_query(call.id, "Not in the library yet. I'll download it — send the Spotify link again later.")
+            await bot.send_message(
+                call.message.chat.id,
+                f"track [{track_id}](https://open.spotify.com/track/{track_id}) is not available yet, try again for it later.",
+                parse_mode="Markdown",
+                disable_web_page_preview=True,
+            )
+            return
         await bot.send_audio(call.message.chat.id, telegram_audio_id, caption=bot_username)
         await bot.answer_callback_query(call.id)
         await bot.send_message(call.message.chat.id, successfull_end_message)

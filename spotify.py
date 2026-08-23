@@ -10,6 +10,9 @@ from db_functions import (
     get_telegram_audio_id,
     get_cached_collection_track_ids,
     save_cached_collection_track_ids,
+    normalize_search_query,
+    get_cached_search_results,
+    save_cached_search_results,
 )
 from log import *
 import time
@@ -184,32 +187,124 @@ def get_track_image(track_id):
         return sp.track(track_id)['album']['images'][0]['url']
 
 # search for a track name in spotify and return their track ids
-def search_track_ids(query):
-    sp = create_spotipy_instance(auth_manager=_spotipy_auth_manager())
-    # Perform a search for tracks using the provided query
-    results = sp.search(q=query, type='track', limit=10)
-    
-    # Extract and return the relevant track information
-    tracks = []
-    for track in results['tracks']['items']:
-        track_info = {
-            'id': track['id'],
-            'name': track['name'],
-            'artist': track['artists'][0]['name'],
-            'uri': track['uri'],
-            'url': track['external_urls']['spotify'],
-            'album': track['album']['name']
-        }
-        tracks.append(track_info)
+def _artist_name(track):
+    artists = track.get("artists") or []
+    if not artists:
+        return ""
+    first = artists[0]
+    if isinstance(first, dict):
+        return first.get("name") or ""
+    return str(first)
 
-    available_track_ids = []
-    for track in tracks:
-        telegram_audio_id = get_telegram_audio_id(track['id'])
-        if telegram_audio_id is not None:
-            track['telegram_audio_id'] = telegram_audio_id
-            available_track_ids.append(track)
-    
-    return available_track_ids
+
+def _album_name(track):
+    album = track.get("album") or {}
+    if isinstance(album, dict):
+        return album.get("name") or ""
+    return ""
+
+
+def _search_items_via_partner(query, limit):
+    from SpotipyFree import Spotify as FreeSpotify
+    results = FreeSpotify().search(query, type="track")
+    items = (results.get("tracks") or {}).get("items") or []
+    return items[:limit]
+
+
+def _search_items_via_official(query, limit):
+    sp = create_spotipy_instance(auth_manager=_spotipy_auth_manager())
+    results = sp.search(q=query, type="track", limit=min(limit, 10))
+    return (results.get("tracks") or {}).get("items") or []
+
+
+def _query_matches(query, name, artist):
+    tokens = [tok for tok in query.lower().split() if len(tok) > 1]
+    if not tokens:
+        return True
+    hay = f"{name} {artist}".lower()
+    return all(tok in hay for tok in tokens)
+
+
+def _parse_search_hits(items):
+    parsed = []
+    seen = set()
+    for track in items:
+        track_id = track.get("id") or track.get("track_id")
+        if not track_id or track_id in seen:
+            continue
+        seen.add(track_id)
+        name = track.get("name") or ""
+        artist = _artist_name(track)
+        parsed.append({
+            "id": track_id,
+            "name": name,
+            "artist": artist,
+            "uri": track.get("uri") or f"spotify:track:{track_id}",
+            "url": (track.get("external_urls") or {}).get("spotify")
+            or f"https://open.spotify.com/track/{track_id}",
+            "album": _album_name(track),
+        })
+    return parsed
+
+
+def _search_spotify_hits(query, limit):
+    items = []
+    if spotify_auth_mode != "anon":
+        try:
+            items = _search_items_via_partner(query, limit)
+        except Exception as e:
+            log(f"SpotipyFree search failed, trying official:\n{e}")
+    if not items:
+        items = _search_items_via_official(query, limit)
+    return _parse_search_hits(items)
+
+
+def search_track_ids(query, require_in_db=False):
+    """Spotify search. Chat search can include not-yet-downloaded tracks; inline cannot."""
+    limit = 40
+    query_key = normalize_search_query(query)
+    cached = get_cached_search_results(query_key) if query_key else None
+    parsed = None
+    source = "spotify"
+
+    if cached:
+        hits, age = cached
+        if age <= search_cache_ttl_seconds and hits:
+            parsed = [dict(t) for t in hits]
+            if age < 3600:
+                source = f"cache ({age // 60}m old)"
+            elif age < 86400:
+                source = f"cache ({age // 3600}h old)"
+            else:
+                source = f"cache ({age // 86400}d old)"
+
+    if parsed is None:
+        try:
+            parsed = _search_spotify_hits(query, limit)
+            if parsed:
+                save_cached_search_results(query_key, parsed)
+        except Exception as e:
+            if cached and cached[0]:
+                parsed = [dict(t) for t in cached[0]]
+                source = f"stale cache after search error: {e}"
+                log(f"search {query!r} failed, using stale cache:\n{e}")
+            else:
+                raise
+
+    for track in parsed:
+        track["telegram_audio_id"] = get_telegram_audio_id(track["id"])
+
+    relevant = [t for t in parsed if _query_matches(query, t["name"], t["artist"])]
+    pool = relevant if relevant else parsed
+    if require_in_db:
+        pool = [t for t in pool if t.get("telegram_audio_id")]
+    out = pool[:10]
+    in_db = sum(1 for t in out if t.get("telegram_audio_id"))
+    log(
+        f"search {query!r}: {len(parsed)} hits via {source}, "
+        f"{len(relevant)} relevant, {in_db}/{len(out)} in db"
+    )
+    return out
 
 def get_track_info_from_track_id(track_id):
     '''return "{artist} - {name}" from track id'''

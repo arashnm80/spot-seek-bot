@@ -129,6 +129,8 @@ queue_handler_sleep_timer = 5
 # Not a big deal — just remember new/removed songs can lag by up to playlist_cache_ttl.
 album_cache_ttl_seconds = 90 * 24 * 3600
 playlist_cache_ttl_seconds = 7 * 24 * 3600
+# Search keywords: skip Spotify until TTL if we already stored the hit list.
+search_cache_ttl_seconds = 30 * 24 * 3600
 
 # Telegram log channel: one summary per this many download attempts, or this many seconds.
 queue_log_flush_tracks = 50
@@ -171,6 +173,9 @@ proxychains4_config_file = "/etc/proxychains4.conf" # from x-ui panel
 # promote channel
 promote_channel_username = "@Arashnm80_Channel"
 promote_channel_link = f"https://t.me/{promote_channel_username.lstrip('@')}"
+# Ask to join the promo channel only after this many fully successful
+# link requests in a row (all tracks already in the database and sent).
+promote_channel_join_after_successes = 5
 not_subscribed_to_channel_message = '''Your link is correct✅.
 Join to get access to database, then send your link again.'''
 

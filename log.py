@@ -4,7 +4,7 @@ import requests
 from variables import log_bot_url, log_channel_id, queue_log_flush_tracks, queue_log_flush_seconds
 
 # log() stays print-only. Per-event Telegram messages used to 429 the log channel.
-# QueueHandler sends batched summaries via send_log_channel / queue_note.
+# queue handler sends batched summaries via send_log_channel / queue_note.
 
 
 def log(log_message):
@@ -79,7 +79,7 @@ def queue_flush(reason=None):
         return
     minutes = max(int((time.time() - _since) / 60), 1)
     lines = [
-        "QueueHandler",
+        "queue handler",
         f"{attempted} tried in ~{minutes} min  |  ok {_stats['ok']}  |  fail {attempted - _stats['ok']}",
         f"no mp3: {_stats['no_mp3']}  too big: {_stats['too_big']}  error: {_stats['error']}  spotdl: {_stats['spotdl_fail']}",
         f"already in db (skipped): {_stats['skipped_in_db']}",

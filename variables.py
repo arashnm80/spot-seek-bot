@@ -231,7 +231,7 @@ user_blocked_me_error = "A request to the Telegram API was unsuccessful. Error c
 
 deactivated_user_error = "A request to the Telegram API was unsuccessful. Error code: 403. Description: Forbidden: user is deactivated"
 
-# Liste de messages de remerciement à reconnaître
+# Whole message must match after lower/strip.
 thank_you_keywords = [
     'thank you',
     'thanks',
@@ -242,9 +242,9 @@ thank_you_keywords = [
     '❤️',
     '♥',
     '🙏',
-    'ممنون'
-    'مرسی'
-    'تشکر'
+    'ممنون',
+    'مرسی',
+    'تشکر',
 ]
 
 

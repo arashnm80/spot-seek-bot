@@ -2,6 +2,10 @@
 # python3 -m uvicorn spotseek:app --host 127.0.0.1 --port 3006
 
 
+import hmac
+
+from fastapi import HTTPException
+
 from my_imports import *
 from bot_handlers import register_handlers
 
@@ -16,6 +20,9 @@ register_handlers(bot)
 # --- FastAPI webhook endpoint ---
 @app.post(WEBHOOK_PATH)
 async def telegram_webhook(request: Request):
+    token = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+    if not WEBHOOK_SECRET_TOKEN or not hmac.compare_digest(token, WEBHOOK_SECRET_TOKEN):
+        raise HTTPException(status_code=403)
     data = await request.json()
     update = types.Update.de_json(data)
     # Process update in background to respond 200 OK immediately

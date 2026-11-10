@@ -1,5 +1,140 @@
 from my_imports import *
 from spotify import get_track_image
+import json
+import socket
+
+_PROXY_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "logs", "proxy_attempts.jsonl")
+_STATS_CACHE = (0.0, {})
+_EXPLORE_RATE = 0.3
+
+
+def _exit_country(kind, port):
+    if kind == "masque":
+        return masque_port_countries.get(port, "??")
+    return psiphon_port_countries.get(port, "??")
+
+
+def _exit_label(kind, port):
+    return f"{kind} {_exit_country(kind, port)} :{port}"
+
+
+def _append_proxy_event(row):
+    """One JSON line per attempt so country success can be grepped later."""
+    os.makedirs(os.path.dirname(_PROXY_LOG), exist_ok=True)
+    row = dict(row)
+    row.setdefault("ts", int(time.time()))
+    with open(_PROXY_LOG, "a", encoding="utf-8") as fh:
+        fh.write(json.dumps(row, ensure_ascii=False) + "\n")
+    global _STATS_CACHE
+    _STATS_CACHE = (0.0, {})
+
+
+def _listening_ports(ports):
+    live = []
+    for port in ports:
+        try:
+            with socket.create_connection(("127.0.0.1", port), 0.4):
+                live.append(port)
+        except OSError:
+            continue
+    return live
+
+
+def _listening_psiphon_ports():
+    return _listening_ports(psiphon_socks_ports)
+
+
+def _recent_port_stats(window_s=48 * 3600):
+    """First-try ok/fail per port from jsonl. Cached 60s so the loop can learn."""
+    global _STATS_CACHE
+    now = time.time()
+    if now - _STATS_CACHE[0] < 60:
+        return _STATS_CACHE[1]
+    stats = {}
+    cutoff = int(now) - window_s
+    try:
+        with open(_PROXY_LOG, encoding="utf-8") as fh:
+            for line in fh:
+                try:
+                    row = json.loads(line)
+                except json.JSONDecodeError:
+                    continue
+                if row.get("ts", 0) < cutoff or row.get("attempt") != 1:
+                    continue
+                port = row.get("port")
+                if not port:
+                    continue
+                ok, fail = stats.get(port, (0, 0))
+                if row.get("ok"):
+                    ok += 1
+                else:
+                    fail += 1
+                stats[port] = (ok, fail)
+    except OSError:
+        stats = {}
+    _STATS_CACHE = (now, stats)
+    return stats
+
+
+def _score_port(port, stats):
+    ok, fail = stats.get(port, (0, 0))
+    n = ok + fail
+    # Few first-tries: below a proven ~40% exit so ES is not displaced by zeros,
+    # above a burned exit so explore-mode can still promote a recovering country.
+    if n < 8:
+        return 0.25
+    return ok / n
+
+
+def _ranked_ports(live, n, stats, explore=_EXPLORE_RATE):
+    if not live or n <= 0:
+        return []
+    ports = list(live)
+    if random.random() < explore:
+        random.shuffle(ports)
+    else:
+        random.shuffle(ports)
+        ports.sort(key=lambda p: -_score_port(p, stats))
+    return ports[:n]
+
+
+def _exits_to_try():
+    """Psiphon first (scored + explore), then MASQUE. Never the VPS IP."""
+    stats = _recent_port_stats()
+    psiphon = _ranked_ports(
+        _listening_ports(psiphon_socks_ports), psiphon_try_limit, stats
+    )
+    masque = _ranked_ports(
+        _listening_ports(masque_socks_ports), masque_try_limit, stats, explore=0.5
+    )
+    return [("psiphon", p) for p in psiphon] + [("masque", p) for p in masque]
+
+
+def _detail_for(track_id, used_proxy, tried_proxy):
+    if track_id in used_proxy:
+        return _exit_label(*used_proxy[track_id])
+    labels = tried_proxy.get(track_id) or []
+    if labels:
+        return "failed after " + ", ".join(labels)
+    return "no live proxy"
+
+
+def _proxychains_conf(port):
+    path = os.path.join("/tmp", f"spotseek-exit-{port}.conf")
+    with open(path, "w", encoding="utf-8") as fh:
+        fh.write(
+            "strict_chain\n"
+            "proxy_dns\n"
+            "[ProxyList]\n"
+            f"socks5 127.0.0.1 {port}\n"
+        )
+    return path
+
+
+def _folder_has_mp3(folder):
+    if not os.path.isdir(folder):
+        return False
+    return any(name.lower().endswith(".mp3") for name in os.listdir(folder))
 
 def list_of_files_in_a_folder(folder_path):
     try:
@@ -54,6 +189,8 @@ def download_tracks(track_ids_list, request_counts=None):
         global current_proxy_index
         global queue_handler_sleep_timer
         request_counts = request_counts or {}
+        used_proxy = {}
+        tried_proxy = {}
 
         def repeats_of(track_id):
             return request_counts.get(track_id, 1)
@@ -61,6 +198,7 @@ def download_tracks(track_ids_list, request_counts=None):
         def note(kind, track_id=None, n=1, detail=None):
             times = repeats_of(track_id) if track_id else None
             queue_note(kind, n=n, track_id=track_id, detail=detail, repeats=times)
+            record_event(f"dl_{kind}", track_id=track_id, n=n)
             if track_id and kind in ("ok", "no_mp3", "too_big", "error", "spotdl_fail", "skipped_in_db"):
                 dropped = remove_track_from_all_queues(track_id)
                 if kind != "ok" and kind != "skipped_in_db":
@@ -114,32 +252,72 @@ def download_tracks(track_ids_list, request_counts=None):
             spotify_client_id = spotify_app[0]
             spotify_client_secret = spotify_app[1]
 
-            command = [
-                       "proxychains4", "-f", proxychains4_config_file,
-                       spotdl_bin,
-                    #    "--client-id", spotify_client_id, "--client-secret", spotify_client_secret,
-                       "--audio", spotdl_audio_provider,
-                       "--lyrics",
-                       "--skip-album-art",
-                       "--bitrate", "320k",
-                    #    "--yt-dlp-args", "--config-location ../yt-dlp.conf",
-                    #    no --yt-dlp-args --proxy (double tunnel) and no -f 140; Deno on PATH → bestaudio/251
-                       "--output", "{track-id}/",
-                       "download"
-                       ]
-            
+            # One local SOCKS per attempt so this VPS IP is never the client.
+            # Rank by first-try success, explore other countries ~30% of the time.
+            if not _exits_to_try():
+                raise RuntimeError("no local SOCKS listening (refusing VPS IP)")
             for track_id in track_ids_list:
-                command.append(f"https://open.spotify.com/track/{track_id}")
-            # download in a subprocess with a timeout (does it in ouput folder)
-            print("download command:\n\n", command) # debug
-            subprocess.run(
-                command,
-                cwd=directory,
-                env=get_spotdl_download_env(),
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                timeout=300,
-            )
+                track_folder = os.path.join(directory, track_id)
+                tries = _exits_to_try()
+                log(
+                    f"proxy tries for {track_id}: "
+                    + ", ".join(_exit_label(k, p) for k, p in tries)
+                )
+                tried_proxy[track_id] = []
+                for attempt, (kind, port) in enumerate(tries, 1):
+                    conf = _proxychains_conf(port)
+                    command = [
+                        "proxychains4",
+                        "-f",
+                        conf,
+                        spotdl_bin,
+                        "--audio",
+                        spotdl_audio_provider,
+                        "--lyrics",
+                        "--skip-album-art",
+                        "--bitrate",
+                        "320k",
+                        "--output",
+                        "{track-id}/",
+                        "download",
+                        f"https://open.spotify.com/track/{track_id}",
+                    ]
+                    label = _exit_label(kind, port)
+                    tried_proxy[track_id].append(label)
+                    log(f"trying {label} for {track_id} ({attempt}/{len(tries)})")
+                    print("download command:\n\n", command)
+                    started = time.monotonic()
+                    subprocess.run(
+                        command,
+                        cwd=directory,
+                        env=get_spotdl_download_env(),
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        timeout=300,
+                    )
+                    elapsed = round(time.monotonic() - started, 1)
+                    ok = _folder_has_mp3(track_folder)
+                    _append_proxy_event(
+                        {
+                            "track_id": track_id,
+                            "kind": kind,
+                            "port": port,
+                            "country": _exit_country(kind, port),
+                            "proxy": f"socks5://127.0.0.1:{port}",
+                            "ok": ok,
+                            "elapsed_s": elapsed,
+                            "attempt": attempt,
+                            "tries": len(tries),
+                        }
+                    )
+                    if ok:
+                        used_proxy[track_id] = (kind, port)
+                        log(f"ok {label} for {track_id} in {elapsed}s")
+                        break
+                    log(f"fail {label} for {track_id} in {elapsed}s")
+                else:
+                    tried = ", ".join(tried_proxy[track_id])
+                    log(f"spotdl no mp3 for {track_id} after {tried}")
         except Exception as e:
             log(bot_name + " error in spotdl download")
             for track_id in track_ids_list:
@@ -174,16 +352,52 @@ def download_tracks(track_ids_list, request_counts=None):
                     # download cover image
                     image_url = get_track_image(track_id)
                     print("downloading image from url:", image_url)
-                    # todo: make this subprocess secure later by turning shell False and using list
-                    subprocess.run(f"wget -O cover.jpg -o /dev/null \"{image_url}\"", shell=True, cwd=track_folder_path, timeout=300)
+                    cover_exit = used_proxy.get(track_id)
+                    if not cover_exit:
+                        leftover = _listening_psiphon_ports() or _listening_ports(masque_socks_ports)
+                        cover_exit = (
+                            ("psiphon" if leftover[0] in psiphon_socks_ports else "masque", leftover[0])
+                            if leftover
+                            else None
+                        )
+                    if cover_exit:
+                        cover_kind, cover_port = cover_exit
+                        log(f"cover wget via {_exit_label(cover_kind, cover_port)} for {track_id}")
+                        cover_cmd = [
+                            "proxychains4",
+                            "-f",
+                            _proxychains_conf(cover_port),
+                            "wget",
+                            "-O",
+                            "cover.jpg",
+                            "-o",
+                            "/dev/null",
+                            image_url,
+                        ]
+                        cover_run = subprocess.run(
+                            cover_cmd,
+                            cwd=track_folder_path,
+                            timeout=300,
+                        )
+                        if cover_run.returncode != 0:
+                            raise RuntimeError(
+                                f"cover wget failed (code {cover_run.returncode})"
+                            )
+                    else:
+                        raise RuntimeError("cover wget skipped: no live proxy")
+                    cover_path = os.path.join(track_folder_path, "cover.jpg")
+                    if not is_usable_cover(cover_path):
+                        raise RuntimeError("cover file missing or not an image")
                     # get mp3 file name from folder
                     try:
                         mp3_file = get_single_mp3(track_folder_path)
                     except Exception as e:
-                        log(bot_name + f" log:\n\ncurrent_proxy_index: {current_proxy_index}\nsleep_timer: {queue_handler_sleep_timer}\n\n🛑 error in get_single_mp3() for track:\n" + track_id + f" ×{repeats_of(track_id)}\n\nerror:\n" + str(e) + f"\nqueue: {queue_depth_label()}")
-                        note("no_mp3", track_id=track_id, detail="no mp3")
+                        proxy_txt = _detail_for(track_id, used_proxy, tried_proxy)
+                        log(bot_name + f" log:\n\nproxy: {proxy_txt}\nsleep_timer: {queue_handler_sleep_timer}\n\n🛑 error in get_single_mp3() for track:\n" + track_id + f" ×{repeats_of(track_id)}\n\nerror:\n" + str(e) + f"\nqueue: {queue_depth_label()}")
+                        note("no_mp3", track_id=track_id, detail=proxy_txt)
                         continue
-                    log(f"current_proxy_index: {current_proxy_index}\n\n🔵 downloaded ×{repeats_of(track_id)}  {track_id}\n{mp3_file}\nqueue: {queue_depth_label()}")
+                    proxy_txt = _detail_for(track_id, used_proxy, tried_proxy)
+                    log(f"proxy: {proxy_txt}\n\n🔵 downloaded ×{repeats_of(track_id)}  {track_id}\n{mp3_file}\nqueue: {queue_depth_label()}")
                     # change cover image
                     change_cover_image(mp3_file, "cover.jpg", track_folder_path)
                     # check file size because of telegram 50MB limit
@@ -191,15 +405,18 @@ def download_tracks(track_ids_list, request_counts=None):
                     audio = open(audio_path, 'rb')
                     file_size = os.fstat(audio.fileno()).st_size
                     if file_size > 50_000_000:
-                        log(bot_name + f" log:\n🛑 too big mp3 file error ×{repeats_of(track_id)}  {track_id}\nqueue: {queue_depth_label()}")
-                        note("too_big", track_id=track_id, detail="too big")
+                        log(bot_name + f" log:\n🛑 too big mp3 file error ×{repeats_of(track_id)}  {track_id}\nproxy: {proxy_txt}\nqueue: {queue_depth_label()}")
+                        note("too_big", track_id=track_id, detail=proxy_txt)
                         audio.close()
                         continue
                     # get track metadata to be shown in telegram
                     track_duration = get_track_duration(audio_path)
                     track_artist = get_artist_name_from_track(audio_path)
                     track_title = get_track_title(audio_path)
-                    thumb_image = open(track_folder_path + "cover_low.jpg", 'rb')
+                    thumb_path = os.path.join(track_folder_path, "cover_low.jpg")
+                    if not is_usable_cover(thumb_path):
+                        raise RuntimeError("cover thumbnail missing after embed")
+                    thumb_image = open(thumb_path, 'rb')
                     # send audio to database_channel:
                     audio_message = bot.send_audio(SP11_CHANNEL_ID, audio, thumb=thumb_image, caption=track_id, duration=track_duration, performer=track_artist, title=track_title)
                     # add file to database - new method based on sqlite3 db
@@ -221,7 +438,7 @@ def download_tracks(track_ids_list, request_counts=None):
                     audio.close()
                     thumb_image.close()
                     at_least_one_track_downloaded = True
-                    note("ok", track_id=track_id)
+                    note("ok", track_id=track_id, detail=proxy_txt)
                 except Exception as e:
                     log(bot_name + f"\nerror processing track {track_id} ×{repeats_of(track_id)}:\n" + str(e) + f"\nqueue: {queue_depth_label()}")
                     note("error", track_id=track_id, detail=str(e)[:80])
@@ -230,8 +447,15 @@ def download_tracks(track_ids_list, request_counts=None):
             folder_set = set(folders)
             for track_id in track_ids_list:
                 if track_id not in folder_set:
-                    log(f"no folder for {track_id} ×{repeats_of(track_id)} | queue: {queue_depth_label()}")
-                    note("no_mp3", track_id=track_id, detail="no folder")
+                    log(
+                        f"no folder for {track_id} ×{repeats_of(track_id)} "
+                        f"| queue: {queue_depth_label()}"
+                    )
+                    note(
+                        "no_mp3",
+                        track_id=track_id,
+                        detail=_detail_for(track_id, used_proxy, tried_proxy),
+                    )
         except Exception as e:
             log(bot_name + "\nerror in processing downloaded tracks:\n" + str(e))
             return "errorInProcessingDownloadedTracks"

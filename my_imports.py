@@ -4,6 +4,7 @@ from db_functions import *
 from functions import *
 from mp3 import *
 from log import *
+from stats import maybe_emit_period_digests
 from spotify import *
 from mp3 import *
 from redis_fast_cache import get_telegram_audio_id_cached

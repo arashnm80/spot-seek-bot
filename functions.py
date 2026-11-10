@@ -56,7 +56,7 @@ def delete_yt_dlp_cache():
         print(f'{directory} does not exist.')
 
 def get_spotdl_download_env():
-    """PATH for proxychains+spotDL: repo .venv/bin (spotdl + Deno) then system Deno."""
+    """PATH for spotDL: repo .venv/bin (spotdl + Deno) then system Deno."""
     env = os.environ.copy()
     extra = []
     venv_bin = os.path.join(spotdl_venv_dir, "bin")
@@ -122,7 +122,7 @@ def _ensure_repo_deno():
     if os.path.isfile(os.path.join(system_deno_dir, "deno")):
         print(f"Using system Deno at {system_deno_dir}/deno")
     else:
-        print("Warning: Deno not found; yt-dlp bestaudio may 403 under proxychains")
+        print("Warning: Deno not found; yt-dlp bestaudio may 403")
 
 
 def setup_spotdl_executable():

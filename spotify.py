@@ -48,7 +48,7 @@ def create_spotipy_instance(requests_session=warp_session, auth_manager=None):
     # there is another `proxies` parameter in it. check it out.
 
 def get_redirect_link(shortened_link):
-    response = requests.head(shortened_link, allow_redirects=True)
+    response = warp_session.head(shortened_link, allow_redirects=True, timeout=15)
     return response.url
 
 def get_link_type(text):

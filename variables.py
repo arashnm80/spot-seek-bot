@@ -171,7 +171,21 @@ warp_session.proxies.update(warp_proxies)
 
 # proxychains
 proxychains4_config_file = "/etc/proxychains4.conf" # from x-ui panel
-# proxychains4_config_file = "/etc/proxychains4-oblivion-warp.conf" # from bepass-org
+# Local SOCKS only — never the VPS IP. Score + explore among live countries.
+# 4190–4199 Psiphon, 4290–4299 MASQUE (WARP/CF). Downloads must not fall back
+# to a direct connection if these are down.
+_proxy_country_order = ["DE", "NL", "GB", "FR", "SE", "PL", "IT", "ES", "JP", "SG"]
+psiphon_socks_ports = list(range(4190, 4200))
+psiphon_port_countries = {
+    4190 + i: cc for i, cc in enumerate(_proxy_country_order)
+}
+masque_socks_ports = list(range(4290, 4300))
+masque_port_countries = {
+    4290 + i: cc for i, cc in enumerate(_proxy_country_order)
+}
+psiphon_try_limit = 4
+masque_try_limit = 2
+youtube_socks_proxy = "socks5://127.0.0.1:41080"
 
 # promote channel
 promote_channel_username = "@Arashnm80_Channel"

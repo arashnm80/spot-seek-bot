@@ -89,6 +89,24 @@ def create_database(db_name="music.db"):
             fetched_at INTEGER NOT NULL
         )
     ''')
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS bot_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            ts INTEGER NOT NULL,
+            kind TEXT NOT NULL,
+            user_id INTEGER,
+            track_id TEXT,
+            n INTEGER NOT NULL DEFAULT 1
+        )
+    ''')
+    c.execute("CREATE INDEX IF NOT EXISTS idx_bot_events_ts_kind ON bot_events(ts, kind)")
+    c.execute("CREATE INDEX IF NOT EXISTS idx_bot_events_user_ts ON bot_events(user_id, ts)")
+    c.execute('''
+        CREATE TABLE IF NOT EXISTS stats_digest (
+            name TEXT PRIMARY KEY,
+            last_key TEXT NOT NULL
+        )
+    ''')
     conn.commit()
     conn.close()
 
@@ -104,6 +122,23 @@ def get_telegram_audio_id(spotify_track_id, db_name="music.db"):
     result = c.fetchone()
     conn.close()
     return result[0] if result else None
+
+def record_event(kind, user_id=None, track_id=None, n=1, db_name="music.db"):
+    """Append one countable bot/queue event. Never raises."""
+    try:
+        create_database(db_name)
+        conn = _connect(db_name)
+        conn.execute(
+            """
+            INSERT INTO bot_events (ts, kind, user_id, track_id, n)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (int(time.time()), str(kind), user_id, track_id, int(n or 1)),
+        )
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
 
 def get_telegram_channel_id(spotify_track_id, db_name="music.db"):
     """

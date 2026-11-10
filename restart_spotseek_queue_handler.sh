@@ -8,7 +8,8 @@ SCRIPT_NAME="spotseek_queue_handler.py"
 
 # Find and kill the running process
 echo "Finding and killing the existing process..."
-PID=$(pgrep -f "$SCRIPT_NAME")
+# Exact cmdline only — `pgrep -f SCRIPT_NAME` also matches this shell / Cursor.
+PID=$(pgrep -x -f "python3 $SCRIPT_NAME" || true)
 
 if [ -n "$PID" ]; then
     echo "Killing process with PID $PID..."
@@ -23,7 +24,7 @@ echo "Starting the script..."
 # get address of current script file (which is repository directory)
 SCRIPT_DIR=$(dirname "$(realpath "$0")")
 
-# Deno on PATH so yt-dlp bestaudio (itag 251) works under proxychains (cron @reboot)
+# Deno on PATH so yt-dlp bestaudio (itag 251) works (cron @reboot)
 export PATH="$SCRIPT_DIR/.venv/bin:/root/.deno/bin:$PATH"
 
 # Navigate to the script's directory

@@ -39,6 +39,61 @@ def _search_results_markup(kind, items):
     return markup
 
 
+def _search_draft_id(message):
+    return int(message.message_id) or 1
+
+
+async def _send_message_draft(bot, chat_id, draft_id, text=""):
+    """Bot API sendMessageDraft. Empty text = native Thinking… placeholder."""
+    from telebot import asyncio_helper
+
+    await asyncio_helper._process_request(
+        bot.token,
+        "sendMessageDraft",
+        method="post",
+        params={
+            "chat_id": chat_id,
+            "draft_id": int(draft_id) or 1,
+            "text": text,
+        },
+    )
+
+
+async def _show_search_loading(bot, message):
+    """Native loading while Spotify search runs.
+
+    Private chats: empty sendMessageDraft shows Telegram's Thinking…
+    placeholder. Groups: typing. Returns draft_id, or None on fallback.
+    """
+    try:
+        if getattr(message.chat, "type", None) == "private":
+            draft_id = _search_draft_id(message)
+            await _send_message_draft(bot, message.chat.id, draft_id, "")
+            return draft_id
+    except Exception as e:
+        log(f"sendMessageDraft unavailable, using typing: {e}")
+    try:
+        await bot.send_chat_action(message.chat.id, "typing")
+    except Exception:
+        pass
+    return None
+
+
+async def _dismiss_search_loading(bot, chat_id, draft_id, text):
+    """Replace Thinking… with the result text so sendMessage can drop the draft.
+
+    There is no deleteMessageDraft. Telegram removes a live draft when the bot
+    sends the real message; empty Thinking… drafts can linger until that
+    bubble is first filled with the same text.
+    """
+    if not draft_id:
+        return
+    try:
+        await _send_message_draft(bot, chat_id, draft_id, text)
+    except Exception:
+        pass
+
+
 async def fulfill_track_ids(
     bot,
     chat_id,
@@ -97,15 +152,24 @@ async def fulfill_track_ids(
     if tracks_to_download:
         enqueue_tracks(chat_id, tracks_to_download)
 
+    record_event("request", user_id=user_id, n=1)
+    record_event("tracks_requested", user_id=user_id, n=total_tracks)
+    if available_tracks:
+        record_event("track_sent", user_id=user_id, n=available_tracks)
+    if tracks_to_download:
+        record_event("track_queued", user_id=user_id, n=len(tracks_to_download))
     if available_tracks == 0:
         end_message = "end💔."
         record_request_outcome(user_id, False)
+        record_event("request_none", user_id=user_id)
     elif available_tracks < total_tracks:
         end_message = f"{available_tracks} of {total_tracks} done✅."
         record_request_outcome(user_id, False)
+        record_event("request_partial", user_id=user_id)
     else:
         end_message = successfull_end_message
         record_request_outcome(user_id, True)
+        record_event("request_full", user_id=user_id)
     kwargs = {}
     if reply_to_message_id is not None:
         kwargs["reply_parameters"] = ReplyParameters(message_id=reply_to_message_id)
@@ -127,6 +191,7 @@ def register_handlers(bot):
             message.from_user.is_premium if message.from_user.is_premium is not None else False,
         )
         log(bot_name + " log:\n📥 /start command sent from user: " + str(message.chat.id))
+        record_event("start", user_id=message.from_user.id)
 
     @bot.message_handler(commands = ['info'])
     async def info_message_handler(message):
@@ -220,6 +285,7 @@ def register_handlers(bot):
 
         # fixme: why this log line doesn't work (it prints though)
         log(bot_name + " log:\n\n🔍 inline query from user:\n" + str(inline_query.from_user.id) + "\n\nchat type:\n" + str(inline_query.chat_type) + "\n\nquery:\n" + inline_query.query)
+        record_event("inline_search", user_id=inline_query.from_user.id)
         
         # Send the results back to Telegram
         await bot.answer_inline_query(inline_query.id, results)
@@ -349,6 +415,7 @@ def register_handlers(bot):
             f"chat type: {message.chat.type}\n"
             f"contents: {message.text}"
         )
+        draft_id = None
         try:
             add_or_update_user(
                 message.from_user.id,
@@ -357,16 +424,24 @@ def register_handlers(bot):
                 message.from_user.is_premium if message.from_user.is_premium is not None else False,
             )
             query = message.text
-            results = search_spotify_items(query, kind="track")
+            draft_id = await _show_search_loading(bot, message)
+            results = await asyncio.to_thread(search_spotify_items, query, "track")
+            caption = _search_caption(query, "track", len(results))
+            markup = _search_results_markup("track", results)
+            await _dismiss_search_loading(bot, message.chat.id, draft_id, caption)
             sent = await bot.send_message(
                 message.chat.id,
-                _search_caption(query, "track", len(results)),
-                reply_markup=_search_results_markup("track", results),
+                caption,
+                reply_markup=markup,
             )
             last_chat_searches[(sent.chat.id, sent.message_id)] = query
+            record_event("search", user_id=message.from_user.id)
         except Exception as e:
             log_exception("error in handle_search", e)
             try:
+                await _dismiss_search_loading(
+                    bot, message.chat.id, draft_id, unsuccessful_process_message
+                )
                 await bot.send_message(message.chat.id, unsuccessful_process_message)
             except Exception:
                 return
@@ -379,7 +454,7 @@ def register_handlers(bot):
             await bot.answer_callback_query(call.id, "Search again — this result is too old.")
             return
         try:
-            results = search_spotify_items(query, kind=kind)
+            results = await asyncio.to_thread(search_spotify_items, query, kind)
             await bot.edit_message_text(
                 _search_caption(query, kind, len(results)),
                 call.message.chat.id,
@@ -428,9 +503,11 @@ def register_handlers(bot):
     @bot.callback_query_handler(func=lambda call: call.data.startswith("track_"))
     async def handle_track_selection(call):
         track_id = call.data.split("_", 1)[1]
+        record_event("track_pick", user_id=call.from_user.id, track_id=track_id)
         telegram_audio_id = get_telegram_audio_id(track_id)
         if telegram_audio_id is None:
             enqueue_tracks(call.message.chat.id, [track_id])
+            record_event("track_queued", user_id=call.from_user.id, track_id=track_id)
             await bot.answer_callback_query(call.id, "Not in the library yet. I'll download it — send the Spotify link again later.")
             await bot.send_message(
                 call.message.chat.id,
@@ -440,6 +517,8 @@ def register_handlers(bot):
             )
             return
         await bot.send_audio(call.message.chat.id, telegram_audio_id, caption=bot_username)
+        record_event("track_sent", user_id=call.from_user.id, track_id=track_id)
+        record_event("request_full", user_id=call.from_user.id)
         await bot.answer_callback_query(call.id)
         await bot.send_message(call.message.chat.id, successfull_end_message)
 

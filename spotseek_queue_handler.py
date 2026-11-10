@@ -40,12 +40,19 @@ if __name__ == "__main__":
             )
         send_log_channel(
             "queue handler started",
-            html_body="<h2>Queue handler</h2><p>Started.</p>",
+            html_body="<h2>Queue handler</h2><p>Started (private-router pool 127.0.0.1:41080).</p>",
         )
         queue_mode = None
+        last_stats_check = 0
 
         while True:
             time.sleep(1)  # delay for each complete loop of queue handler
+            if time.time() - last_stats_check > 3600:
+                try:
+                    maybe_emit_period_digests()
+                except Exception as e:
+                    log(f"stats digest failed: {e}")
+                last_stats_check = time.time()
 
             counts = pending_request_counts()
             waiting = sum(counts.values())

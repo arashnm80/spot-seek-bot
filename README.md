@@ -84,7 +84,7 @@ add this text to crontab (change with the path you've cloned repository):
 - [x] bot should send available tracks to users while new one is being downloaded with spotdl to use best of time.
 - [ ] higher priority for first time users
 - [x] ~only 1 single user can use the bot and it can't multitask~
-- [ ] use a library like telethon for big mp3 files more than 50MB
+- [ ] large mp3 download/upload via **private-router** (do not open a second Telethon session; private-router owns the user session)
 - [x] ~searching in database algorithm isn't fast and efficient~
 - [x] ~Download playlists with more thatn 100 songs~
 - [ ] find a clean way to give access to database to next bot maintainers

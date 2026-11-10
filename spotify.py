@@ -1,11 +1,6 @@
 from variables import *
 import re
-import spotipy
-from spotipy.oauth2 import SpotifyClientCredentials
-from spotipy.cache_handler import MemoryCacheHandler
-import requests # for get_redirect_link
-import random
-from spotipy_anon import SpotifyAnon
+import requests  # for get_redirect_link / oembed / private-router
 from db_functions import (
     get_telegram_audio_id,
     get_cached_collection_track_ids,
@@ -15,37 +10,24 @@ from db_functions import (
     save_cached_search_results,
 )
 from log import *
-import time
 
-def _spotipy_auth_manager():
-    """None = official client credentials. SpotifyAnon = old web-player path."""
-    if spotify_auth_mode == "anon":
-        return SpotifyAnon()
-    return None
+# Spotify Web API credentials live in private-router (diamond Premium account).
 
-# auth_manager=None means official client credentials (no web-player token).
-def create_spotipy_instance(requests_session=warp_session, auth_manager=None):
-    # random spotify app from list to avoid rate limiting
-    random.seed(time.time())
-    spotify_app = random.choice(spotify_apps_list)
-    spotify_client_id = spotify_app[0]
-    spotify_client_secret = spotify_app[1]
-    # Authentication - without user
-    # Memory cache only: a .cache file can keep a token minted during the
-    # Premium-owner 403 window and replay it for up to an hour.
-    client_credentials_manager = SpotifyClientCredentials(
-        client_id=spotify_client_id,
-        client_secret=spotify_client_secret,
-        cache_handler=MemoryCacheHandler(),
-    )
-    # spotipy instance
-    sp = spotipy.Spotify(client_credentials_manager=client_credentials_manager,
-                         requests_session=requests_session,
-                         auth_manager=auth_manager)
-    return sp
-    # fixme: looks like spotipy.Spitify requests_session has True/False values, not a session object.
-    # fixme: update: despite above sentence, looks like that's the correct way to use it.
-    # there is another `proxies` parameter in it. check it out.
+
+def _router_headers():
+    if not private_router_token:
+        raise RuntimeError("PRIVATE_ROUTER_TOKEN is not set")
+    return {"Authorization": f"Bearer {private_router_token}"}
+
+
+def _router_post(path, payload, timeout=60):
+    url = f"{private_router_url}{path}"
+    response = requests.post(url, headers=_router_headers(), json=payload, timeout=timeout)
+    if not response.ok:
+        detail = response.text[:500]
+        raise RuntimeError(f"private-router {path} -> {response.status_code}: {detail}")
+    return response.json()
+
 
 def get_redirect_link(shortened_link):
     response = warp_session.head(shortened_link, allow_redirects=True, timeout=15)
@@ -73,64 +55,6 @@ def get_valid_spotify_links(text):
     print(all_matches) # as debug
     return all_matches
 
-def _track_ids_from_playlist_items(items):
-    track_ids = []
-    for t in items:
-        try:
-            if ("track" in t) and (t["track"] is not None) and ("id" in t["track"]) and (t["track"]["id"] is not None):
-                # due to a bug, a small number of tracks in playlists don't have
-                # ["track"]["id"] and cause the program to crash
-                # like 75th track in https://open.spotify.com/playlist/64r1Ry0JIWHboowR4LWp5R
-                # which is https://open.spotify.com/track/46cdw28EXOhDPnD1emDC6T
-                # so we check and make sure this field exists
-                track_ids.append(t["track"]["id"])
-        except Exception:
-            print("error in getting a track id")
-    return track_ids
-
-def _paginate_spotipy_playlist(sp, playlist_id):
-    results = sp.playlist_tracks(playlist_id)
-    tracks = results['items']
-    while results['next']:
-        results = sp.next(results)
-        tracks.extend(results['items'])
-    return _track_ids_from_playlist_items(tracks)
-
-def get_playlist_track_ids_via_anon(playlist_id):
-    """Previous path: official client credentials, then SpotifyAnon on failure."""
-    sp = create_spotipy_instance(auth_manager=None)
-    try:
-        return _paginate_spotipy_playlist(sp, playlist_id)
-    except Exception as e:
-        log(f"🛑 error in getting playlist tracks:\n\n{e}\n\n\ntrying again with spotipyAnon:")
-        sp = create_spotipy_instance(auth_manager=SpotifyAnon())
-        track_ids = _paginate_spotipy_playlist(sp, playlist_id)
-        log("spotifyAnon worked fine✅")
-        return track_ids
-
-def get_album_track_ids_via_partner(album_id):
-    """SpotipyFree album tracks (sync). Official album_tracks can 403 on a stale Spotipy token."""
-    from SpotipyFree import Spotify as FreeSpotify
-    results = FreeSpotify().album_tracks(album_id)
-    items = results["items"] if isinstance(results, dict) else results
-    return [t["id"] for t in items if t.get("id")]
-
-def get_playlist_track_ids_via_partner(playlist_id):
-    """SpotipyFree / api-partner, sync paginate (playlist_items() breaks inside uvicorn's event loop)."""
-    import spotapi
-    from SpotipyFree.Formatter import SpotifyFormatter
-    track_ids = []
-    for chunk in spotapi.PublicPlaylist(playlist_id).paginate_playlist():
-        for track in chunk.get("items") or []:
-            try:
-                meta = SpotifyFormatter.formatPlaylistTrack(track)
-                tid = (meta.get("track") or {}).get("id")
-                if tid:
-                    track_ids.append(tid)
-            except Exception:
-                print("error in getting a track id")
-    return track_ids
-
 def get_track_ids(link):    
     # get id of link, album or playlist
     link_id = link.split("/")[-1].split("?")[0]
@@ -152,17 +76,10 @@ def get_track_ids(link):
 
     try:
         if link_type == "album":
-            if spotify_auth_mode == "anon":
-                sp = create_spotipy_instance(auth_manager=_spotipy_auth_manager())
-                tracks = sp.album_tracks(link_id)["items"]
-                track_ids = [t["id"] for t in tracks]
-            else:
-                track_ids = get_album_track_ids_via_partner(link_id)
+            data = _router_post("/v1/spotify/albums/tracks", {"album_id": link_id})
         else:
-            if spotify_auth_mode == "anon":
-                track_ids = get_playlist_track_ids_via_anon(link_id)
-            else:
-                track_ids = get_playlist_track_ids_via_partner(link_id)
+            data = _router_post("/v1/spotify/playlists/tracks", {"playlist_id": link_id})
+        track_ids = data.get("track_ids") or []
     except Exception as e:
         log(f"collection fetch failed for {link_type} {link_id}: {e}")
         if cached and cached[0]:
@@ -175,16 +92,19 @@ def get_track_ids(link):
     return track_ids
 
 def get_track_image(track_id):
-    """Cover URL. oembed first: official Web API often 403/timeouts and is not needed for covers."""
+    """Cover URL. oembed first: Web API is not needed for covers when oembed works."""
     oembed_url = f"https://open.spotify.com/oembed?url=https://open.spotify.com/track/{track_id}"
     try:
         r = warp_session.get(oembed_url, timeout=10)
         r.raise_for_status()
         return r.json()["thumbnail_url"]
     except Exception as e:
-        log(f"oembed get_track_image failed, trying official:\n{e}")
-        sp = create_spotipy_instance(auth_manager=_spotipy_auth_manager())
-        return sp.track(track_id)['album']['images'][0]['url']
+        log(f"oembed get_track_image failed, trying private-router:\n{e}")
+        data = _router_post("/v1/spotify/tracks/get", {"track_id": track_id})
+        image = data.get("album_image_url")
+        if not image:
+            raise RuntimeError(f"no album image for track {track_id}")
+        return image
 
 # search for a track name in spotify and return their track ids
 def _artist_name(track):
@@ -202,29 +122,6 @@ def _album_name(track):
     if isinstance(album, dict):
         return album.get("name") or ""
     return ""
-
-
-def _search_items_via_partner(query, limit):
-    from SpotipyFree import Spotify as FreeSpotify
-    results = FreeSpotify().search(query, type="track")
-    items = (results.get("tracks") or {}).get("items") or []
-    return items[:limit]
-
-
-def _search_items_via_official(query, limit, search_type="track"):
-    sp = create_spotipy_instance(auth_manager=_spotipy_auth_manager())
-    api_limit = min(limit, 10 if search_type == "track" else 20)
-    results = sp.search(q=query, type=search_type, limit=api_limit)
-    bucket = "tracks" if search_type == "track" else "albums"
-    return (results.get(bucket) or {}).get("items") or []
-
-
-def _query_matches(query, name, artist):
-    tokens = [tok for tok in query.lower().split() if len(tok) > 1]
-    if not tokens:
-        return True
-    hay = f"{name} {artist}".lower()
-    return all(tok in hay for tok in tokens)
 
 
 def _parse_search_hits(items):
@@ -247,18 +144,6 @@ def _parse_search_hits(items):
             "album": _album_name(track),
         })
     return parsed
-
-
-def _search_spotify_hits(query, limit):
-    items = []
-    if spotify_auth_mode != "anon":
-        try:
-            items = _search_items_via_partner(query, limit)
-        except Exception as e:
-            log(f"SpotipyFree search failed, trying official:\n{e}")
-    if not items:
-        items = _search_items_via_official(query, limit, search_type="track")
-    return _parse_search_hits(items)
 
 
 def _parse_album_hits(items):
@@ -302,24 +187,43 @@ def _album_from_track(track):
     }
 
 
+def _search_spotify_hits(query, limit):
+    data = _router_post(
+        "/v1/spotify/search",
+        {"q": query, "type": "track", "limit": limit},
+        timeout=90,
+    )
+    return _parse_search_hits(data.get("items") or [])
+
+
 def _search_album_hits(query, limit):
     try:
-        items = _search_items_via_official(query, limit, search_type="album")
-        parsed = _parse_album_hits(items)
+        data = _router_post(
+            "/v1/spotify/search",
+            {"q": query, "type": "album", "limit": limit},
+            timeout=90,
+        )
+        parsed = _parse_album_hits(data.get("items") or [])
         if parsed:
             return parsed
     except Exception as e:
-        log(f"official album search failed, trying albums from tracks:\n{e}")
-    raw_tracks = []
-    if spotify_auth_mode != "anon":
-        try:
-            raw_tracks = _search_items_via_partner(query, 40)
-        except Exception:
-            raw_tracks = []
-    if not raw_tracks:
-        raw_tracks = _search_items_via_official(query, 40, search_type="track")
+        log(f"album search failed, trying albums from tracks:\n{e}")
+    track_data = _router_post(
+        "/v1/spotify/search",
+        {"q": query, "type": "track", "limit": 40},
+        timeout=90,
+    )
+    raw_tracks = track_data.get("items") or []
     albums = [_album_from_track(t) for t in raw_tracks]
     return _parse_album_hits([a for a in albums if a])[:limit]
+
+
+def _query_matches(query, name, artist):
+    tokens = [tok for tok in query.lower().split() if len(tok) > 1]
+    if not tokens:
+        return True
+    hay = f"{name} {artist}".lower()
+    return all(tok in hay for tok in tokens)
 
 
 def _search_cache_age_label(age):
@@ -389,8 +293,5 @@ def search_track_ids(query, require_in_db=False):
 
 def get_track_info_from_track_id(track_id):
     '''return "{artist} - {name}" from track id'''
-    sp = create_spotipy_instance(auth_manager=_spotipy_auth_manager())
-    track = sp.track(track_id)
-    artist = track["artists"][0]["name"]
-    name = track["name"]
-    return f"{artist} - {name}"
+    data = _router_post("/v1/spotify/tracks/get", {"track_id": track_id})
+    return data.get("label") or f"{data.get('artist', '')} - {data.get('name', '')}"

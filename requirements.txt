@@ -5,9 +5,6 @@ pandas
 pydub
 mutagen
 portalocker
-spotipy
-spotipy-anon
-spotipyfree
 requests[socks]
 boto3
 telethon

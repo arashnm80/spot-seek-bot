@@ -245,13 +245,6 @@ def download_tracks(track_ids_list, request_counts=None):
         try:       
             print("start downloading tracks via spotdl")
 
-            # experimental - pass spotify api key to spotdl
-            # random spotify app from list to avoid rate limiting
-            random.seed(time.time())
-            spotify_app = random.choice(spotify_apps_list)
-            spotify_client_id = spotify_app[0]
-            spotify_client_secret = spotify_app[1]
-
             # One local SOCKS per attempt so this VPS IP is never the client.
             # Rank by first-try success, explore other countries ~30% of the time.
             if not _exits_to_try():

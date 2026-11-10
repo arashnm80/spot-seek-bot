@@ -28,7 +28,7 @@ import time # for sleep
 import subprocess # to be able to run another python script inside current one
 import fcntl # to lock writing simultaneously on one file
 import portalocker # for experimental queue handler bypass - used in db_csv_append
-import random # to choose random spotify app to be used in api
+import random
 
 import sqlite3 # to use sqlite3 database
 import boto3 # for S3 upload

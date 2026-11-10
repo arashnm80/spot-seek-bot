@@ -196,17 +196,9 @@ promote_channel_join_after_successes = 5
 not_subscribed_to_channel_message = '''Your link is correct✅.
 Join to get access to database, then send your link again.'''
 
-# spotify app - new gen (multiple apps to bypass limits)
-# template: a list of [spotify_client_id, spotify_client_secret]
-# start with only a single app and add to them as users count grows
-spotify_apps_list = os.environ["SPOTIFY_APPS_LIST"]
-spotify_apps_list = json.loads(spotify_apps_list)
-
-# How the bot talks to Spotify for metadata (track/album/search/cover + playlist ids).
-# "official" — Web API client credentials (current). Playlist *contents* use SpotipyFree /
-#   api-partner because official GET /playlists/{id}/tracks is 403 by design (2026).
-# "anon" — previous SpotifyAnon web-player token path (official first, then Anon fallback).
-spotify_auth_mode = "official"
+# Spotify Web API goes through private-router (diamond Premium developer account).
+private_router_url = os.environ.get("PRIVATE_ROUTER_URL", "http://127.0.0.1:3010").rstrip("/")
+private_router_token = os.environ.get("PRIVATE_ROUTER_TOKEN", "")
 
 # How spotdl finds a YouTube file. Stored on new rows as track_info.download_method.
 # Older rows stay NULL (unknown / pre-tag). "youtube" = ytsearch, not YouTube Music.

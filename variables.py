@@ -196,7 +196,8 @@ promote_channel_join_after_successes = 5
 not_subscribed_to_channel_message = '''Your link is correct✅.
 Join to get access to database, then send your link again.'''
 
-# Spotify Web API goes through private-router (diamond Premium developer account).
+# Spotify metadata/search via private-router (diamond Premium developer app).
+# Playlist writes are playlistify-only and do not go through this bot.
 private_router_url = os.environ.get("PRIVATE_ROUTER_URL", "http://127.0.0.1:3010").rstrip("/")
 private_router_token = os.environ.get("PRIVATE_ROUTER_TOKEN", "")
 
